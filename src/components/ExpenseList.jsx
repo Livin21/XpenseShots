@@ -1,3 +1,4 @@
+import { Loader2 } from 'lucide-react';
 import { ExpenseCard } from './ExpenseCard.jsx';
 import { EmptyState } from './EmptyState.jsx';
 
@@ -19,7 +20,12 @@ export function ExpenseList({
   onEditExpense
 }) {
   if (loading) {
-    return <div className="expense-list-loading">Loading...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+        <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
+        <p className="text-sm">Loading expenses...</p>
+      </div>
+    );
   }
 
   if (expenses.length === 0) {
@@ -27,14 +33,19 @@ export function ExpenseList({
   }
 
   return (
-    <div className="expense-list">
-      {expenses.map((expense) => (
-        <ExpenseCard
+    <div className="space-y-3">
+      {expenses.map((expense, index) => (
+        <div
           key={expense.id}
-          expense={expense}
-          compact={compact}
-          onEdit={onEditExpense ? () => onEditExpense(expense) : undefined}
-        />
+          className="animate-fade-in"
+          style={{ animationDelay: `${index * 50}ms` }}
+        >
+          <ExpenseCard
+            expense={expense}
+            compact={compact}
+            onEdit={onEditExpense ? () => onEditExpense(expense) : undefined}
+          />
+        </div>
       ))}
     </div>
   );

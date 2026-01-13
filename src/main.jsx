@@ -8,7 +8,7 @@ import {
   createRoute,
   createRouter,
 } from '@tanstack/react-router'
-import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
+import { Home, Receipt, Shield, Zap } from 'lucide-react'
 
 import './styles.css'
 import reportWebVitals from './reportWebVitals.js'
@@ -19,29 +19,50 @@ import { ExpensesPage } from './routes/expenses.jsx'
 // Root layout with navigation
 function RootLayout() {
   return (
-    <div className="app-container">
-      <header className="app-header">
-        <Link to="/" className="app-title">
-          xpenseshots
-        </Link>
-        <nav className="app-nav">
-          <Link to="/" className="nav-link" activeProps={{ className: 'nav-link active' }}>
-            Home
+    <div className="min-h-screen flex flex-col bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-50 glass border-b border-border">
+        <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2 group">
+            <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center group-hover:bg-primary/30 transition-colors">
+              <Zap className="w-4 h-4 text-primary" />
+            </div>
+            <span className="text-lg font-bold gradient-text">xpenseshots</span>
           </Link>
-          <Link to="/expenses" className="nav-link" activeProps={{ className: 'nav-link active' }}>
-            Expenses
-          </Link>
-        </nav>
+          <nav className="flex items-center gap-1">
+            <Link
+              to="/"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-200"
+              activeProps={{ className: 'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary/20 text-primary' }}
+            >
+              <Home className="w-4 h-4" />
+              <span className="hidden sm:inline">Home</span>
+            </Link>
+            <Link
+              to="/expenses"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-200"
+              activeProps={{ className: 'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary/20 text-primary' }}
+            >
+              <Receipt className="w-4 h-4" />
+              <span className="hidden sm:inline">Expenses</span>
+            </Link>
+          </nav>
+        </div>
       </header>
-      <main className="app-main">
+
+      {/* Main content */}
+      <main className="flex-1 w-full max-w-2xl mx-auto px-4 py-6">
         <Outlet />
       </main>
-      <footer className="app-footer">
-        <div className="privacy-badge">
-          🔒 All data stays on your device
+
+      {/* Footer */}
+      <footer className="border-t border-border py-4">
+        <div className="max-w-2xl mx-auto px-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+          <Shield className="w-4 h-4 text-primary" />
+          <span>All data stays on your device</span>
         </div>
       </footer>
-      <TanStackRouterDevtools position="bottom-right" />
+
     </div>
   )
 }

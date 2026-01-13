@@ -1,4 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
+import { AlertCircle, CheckCircle2, Copy, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { UploadDropzone } from '../components/UploadDropzone.jsx';
 import { ExpenseCard } from '../components/ExpenseCard.jsx';
 import { ExpenseList } from '../components/ExpenseList.jsx';
@@ -94,8 +98,9 @@ export function HomePage() {
   const isProcessing = status === 'preprocessing' || status === 'recognizing';
 
   return (
-    <div className="home-page">
-      <div className="upload-section">
+    <div className="space-y-8">
+      {/* Upload Section */}
+      <section className="space-y-4">
         <UploadDropzone
           onFileSelect={handleFileSelect}
           disabled={isProcessing}
@@ -103,35 +108,46 @@ export function HomePage() {
 
         {/* Processing State */}
         {isProcessing && (
-          <div className="processing-status">
-            <div className="progress-bar">
-              <div
-                className="progress-fill"
-                style={{ width: `${Math.round(progress * 100)}%` }}
-              />
+          <div className="rounded-xl border border-border bg-card/50 p-4 space-y-3 animate-fade-in">
+            <div className="flex items-center gap-3">
+              <Loader2 className="w-5 h-5 text-primary animate-spin" />
+              <span className="text-sm font-medium text-foreground">
+                {status === 'preprocessing' ? 'Preparing image...' : 'Recognizing text...'}
+              </span>
+              <span className="ml-auto text-sm text-muted-foreground">
+                {Math.round(progress * 100)}%
+              </span>
             </div>
-            <div className="progress-text">
-              {status === 'preprocessing' ? 'Preparing image...' : `Recognizing text... ${Math.round(progress * 100)}%`}
-            </div>
+            <Progress value={progress * 100} />
           </div>
         )}
 
         {/* Error State */}
         {status === 'error' && (
-          <div className="error-message">
-            <div className="error-text">{error}</div>
-            <button className="btn-retry" onClick={handleReset}>Try Again</button>
+          <div className="rounded-xl border border-destructive/50 bg-destructive/10 p-4 space-y-3 animate-slide-up">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-destructive" />
+              <span className="text-sm text-destructive">{error}</span>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleReset}>
+              Try Again
+            </Button>
           </div>
         )}
 
         {/* Parse Failed */}
         {status === 'done' && !expense && (
-          <div className="parse-failed">
-            <div className="parse-failed-text">
-              Could not extract expense from this screenshot.
-              Try a GPay, Swiggy, Zomato, or Instamart receipt.
+          <div className="rounded-xl border border-yellow-500/50 bg-yellow-500/10 p-4 space-y-3 animate-slide-up">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-yellow-500" />
+              <span className="text-sm text-yellow-200">
+                Could not extract expense from this screenshot.
+                Try a GPay, Swiggy, Zomato, or Instamart receipt.
+              </span>
             </div>
-            <button className="btn-retry" onClick={handleReset}>Try Another</button>
+            <Button variant="outline" size="sm" onClick={handleReset}>
+              Try Another
+            </Button>
           </div>
         )}
 
@@ -146,38 +162,53 @@ export function HomePage() {
 
         {/* Success Preview */}
         {expense && !showReview && saveStatus && (
-          <div className="save-result">
+          <div className="space-y-4 animate-slide-up">
             {saveStatus === 'saving' && (
-              <div className="saving-text">Saving...</div>
+              <div className="flex items-center gap-3 text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm">Saving...</span>
+              </div>
             )}
+
             {saveStatus === 'saved' && (
               <>
-                <div className="saved-text">Expense saved!</div>
+                <div className="flex items-center gap-2 text-green-400">
+                  <CheckCircle2 className="w-5 h-5" />
+                  <span className="text-sm font-medium">Expense saved!</span>
+                </div>
                 <ExpenseCard expense={expense} showConfidence />
-                <button className="btn-add-another" onClick={handleReset}>Add Another</button>
+                <Button variant="outline" onClick={handleReset} className="w-full">
+                  Add Another
+                </Button>
               </>
             )}
+
             {saveStatus === 'duplicate' && (
               <>
-                <div className="duplicate-text">This receipt was already added</div>
+                <div className="flex items-center gap-2 text-yellow-400">
+                  <Copy className="w-5 h-5" />
+                  <span className="text-sm font-medium">This receipt was already added</span>
+                </div>
                 <ExpenseCard expense={expense} />
-                <button className="btn-add-another" onClick={handleReset}>Add Another</button>
+                <Button variant="outline" onClick={handleReset} className="w-full">
+                  Add Another
+                </Button>
               </>
             )}
           </div>
         )}
-      </div>
+      </section>
 
       {/* Recent Expenses */}
-      <div className="recent-section">
-        <h2 className="section-title">Recent Expenses</h2>
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold text-foreground">Recent Expenses</h2>
         <ExpenseList
           expenses={expenses}
           emptyMessage="No expenses yet. Upload a screenshot to get started!"
           compact
           onEditExpense={handleEditExpense}
         />
-      </div>
+      </section>
 
       {/* Edit Modal */}
       {editingExpense && (
