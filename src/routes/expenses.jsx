@@ -16,18 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { ExpenseList } from '../components/ExpenseList.jsx';
 import { EditExpenseModal } from '../components/EditExpenseModal.jsx';
 import { useExpenses } from '../hooks/useExpenses.js';
-
-const CATEGORIES = [
-  'Food & Dining',
-  'Groceries',
-  'Utilities',
-  'Subscriptions',
-  'Shopping',
-  'Transport',
-  'Entertainment',
-  'Health',
-  'Miscellaneous',
-];
+import { useCategories } from '../hooks/useCategories.js';
 
 const SOURCES = [
   'GPay',
@@ -42,6 +31,7 @@ const SOURCES = [
   'Kotak Bank',
   'Bank SMS',
   'Manual',
+  'Shared',
 ];
 
 const DATE_RANGES = [
@@ -110,6 +100,7 @@ function getDateRange(rangeValue) {
  */
 export function ExpensesPage() {
   const { expenses, loading, update, remove } = useExpenses();
+  const { categories } = useCategories();
   const [editingExpense, setEditingExpense] = useState(null);
 
   // Search and filter state
@@ -287,8 +278,8 @@ export function ExpensesPage() {
                 )}
               >
                 <option value="">All Categories</option>
-                {CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.name}>{cat.name}</option>
                 ))}
               </select>
             </div>

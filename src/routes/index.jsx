@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { AlertCircle, CheckCircle2, Copy, Loader2, ImagePlus, MessageSquareText, PenLine } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Copy, Loader2, ImagePlus, MessageSquareText, PenLine, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,19 +12,8 @@ import { EditExpenseModal } from '../components/EditExpenseModal.jsx';
 import { useOcr } from '../hooks/useOcr.js';
 import { useParseExpense } from '../hooks/useParseExpense.js';
 import { useExpenses } from '../hooks/useExpenses.js';
+import { useCategories } from '../hooks/useCategories.js';
 import { parseBankSms } from '../parser/banksms.js';
-
-const CATEGORIES = [
-  'Food & Dining',
-  'Groceries',
-  'Utilities',
-  'Subscriptions',
-  'Shopping',
-  'Transport',
-  'Entertainment',
-  'Health',
-  'Miscellaneous',
-];
 
 /**
  * Generate a simple hash from text
@@ -51,6 +40,7 @@ export function HomePage() {
   const { status, progress, text, imageHash, error, processImage, reset } = useOcr();
   const { expense, needsReview } = useParseExpense(text, imageHash);
   const { expenses, add, update, remove, exists, refresh } = useExpenses({ recent: true, limit: 5 });
+  const { categories } = useCategories();
   const [showReview, setShowReview] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null);
   const [editingExpense, setEditingExpense] = useState(null);
@@ -71,6 +61,76 @@ export function HomePage() {
   const [manualDate, setManualDate] = useState(formatDateForInput(new Date()));
   const [manualExpense, setManualExpense] = useState(null);
   const [manualError, setManualError] = useState(null);
+
+  // Shared expense import state
+  const [importedExpense, setImportedExpense] = useState(null);
+  const [showImportModal, setShowImportModal] = useState(false);
+
+  // Handle shared expense import from URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const importData = params.get('import');
+
+    if (importData) {
+      try {
+        const data = new URLSearchParams(decodeURIComponent(importData));
+        const sharedExpense = {
+          amount: parseFloat(data.get('a')) || 0,
+          merchant: data.get('m') || 'Unknown',
+          category: data.get('c') || 'Miscellaneous',
+          date: data.get('d') || new Date().toISOString().split('T')[0],
+          tags: data.get('t') ? data.get('t').split(',').filter(Boolean) : [],
+          split: data.get('s') ? {
+            enabled: true,
+            people: data.get('s').split(',').map(p => {
+              const [name, share] = p.split(':');
+              return { name, share: parseFloat(share) || 0, paid: false };
+            }),
+          } : undefined,
+          source: 'Shared',
+          confidence: 1,
+          currency: 'INR',
+        };
+
+        if (sharedExpense.amount > 0) {
+          setImportedExpense(sharedExpense);
+          setShowImportModal(true);
+          // Clear the URL without reload
+          window.history.replaceState({}, '', window.location.pathname);
+        }
+      } catch (err) {
+        console.error('Failed to parse shared expense:', err);
+      }
+    }
+  }, []);
+
+  // Handle importing shared expense
+  const handleImportExpense = useCallback(async () => {
+    if (!importedExpense) return;
+
+    try {
+      const hashInput = `shared-${importedExpense.amount}-${importedExpense.merchant}-${Date.now()}`;
+      const hash = await generateHash(hashInput);
+      const expenseWithId = {
+        ...importedExpense,
+        id: hash,
+        date: new Date(importedExpense.date).toISOString(),
+        createdAt: new Date().toISOString(),
+      };
+
+      await add(expenseWithId);
+      setShowImportModal(false);
+      setImportedExpense(null);
+      setSaveStatus('saved');
+    } catch (err) {
+      console.error('Failed to import expense:', err);
+    }
+  }, [importedExpense, add]);
+
+  const handleCancelImport = useCallback(() => {
+    setShowImportModal(false);
+    setImportedExpense(null);
+  }, []);
 
   // Auto-save high confidence expenses (screenshot mode)
   useEffect(() => {
@@ -448,8 +508,8 @@ export function HomePage() {
                       'focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary'
                     )}
                   >
-                    {CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.name}>{cat.name}</option>
                     ))}
                   </select>
                 </div>
@@ -559,6 +619,41 @@ export function HomePage() {
           onCancel={handleCancelEdit}
           onDelete={handleDeleteExpense}
         />
+      )}
+
+      {/* Import Shared Expense Modal */}
+      {showImportModal && importedExpense && (
+        <div
+          className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+          onClick={handleCancelImport}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-border bg-card shadow-2xl shadow-primary/10 animate-slide-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 border-b border-border">
+              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                <Download className="w-5 h-5 text-primary" />
+                Import Shared Expense
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Someone shared this expense with you
+              </p>
+            </div>
+            <div className="p-6">
+              <ExpenseCard expense={importedExpense} />
+            </div>
+            <div className="flex gap-3 p-6 border-t border-border">
+              <Button variant="outline" onClick={handleCancelImport} className="flex-1">
+                Cancel
+              </Button>
+              <Button onClick={handleImportExpense} className="flex-1">
+                <Download className="w-4 h-4 mr-2" />
+                Add to My Expenses
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -1,6 +1,7 @@
-import { Calendar, Store } from 'lucide-react';
+import { Calendar, Store, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { useCategories } from '../hooks/useCategories.js';
 
 /**
  * Format amount with currency
@@ -49,38 +50,33 @@ function getSourceVariant(source) {
     'Kotak Bank': 'warning',
     'Bank SMS': 'secondary',
     'Manual': 'outline',
+    'Shared': 'info',
   };
   return sourceMap[source] || 'secondary';
 }
 
 /**
- * Get category icon color
- * @param {string} category
+ * Convert hex color to tailwind-style text class
+ * @param {string} hexColor
  * @returns {string}
  */
-function getCategoryColor(category) {
-  const colorMap = {
-    'Food & Dining': 'text-orange-400',
-    'Groceries': 'text-green-400',
-    'Utilities': 'text-blue-400',
-    'Subscriptions': 'text-purple-400',
-    'Shopping': 'text-pink-400',
-    'Transport': 'text-yellow-400',
-  };
-  return colorMap[category] || 'text-muted-foreground';
+function hexToTextStyle(hexColor) {
+  return { color: hexColor };
 }
 
 /**
  * Expense card component
  * @param {{
- *   expense: import('../parser/types.js').ParsedExpense & { id?: string },
+ *   expense: import('../parser/types.js').ParsedExpense & { id?: string, tags?: string[], split?: object },
  *   showConfidence?: boolean,
  *   compact?: boolean,
  *   onEdit?: () => void
  * }} props
  */
 export function ExpenseCard({ expense, showConfidence = false, compact = false, onEdit }) {
-  const { amount, merchant, category, date, source, confidence } = expense;
+  const { amount, merchant, category, date, source, confidence, tags, split } = expense;
+  const { getCategoryColor } = useCategories();
+  const categoryColor = getCategoryColor(category);
 
   return (
     <div
@@ -114,14 +110,31 @@ export function ExpenseCard({ expense, showConfidence = false, compact = false, 
         <Badge variant={getSourceVariant(source)} className="text-xs">
           {source}
         </Badge>
-        <Badge variant="outline" className={cn('text-xs', getCategoryColor(category))}>
+        <Badge variant="outline" className="text-xs" style={hexToTextStyle(categoryColor)}>
           {category}
         </Badge>
+        {split?.enabled && split?.people?.length > 0 && (
+          <Badge variant="outline" className="text-xs text-blue-400">
+            <Users className="w-3 h-3 mr-1" />
+            Split ({split.people.length})
+          </Badge>
+        )}
         <span className="text-xs text-muted-foreground flex items-center gap-1 ml-auto">
           <Calendar className="w-3 h-3" />
           {formatDate(date)}
         </span>
       </div>
+
+      {/* Tags */}
+      {tags && tags.length > 0 && (
+        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+          {tags.map((tag) => (
+            <span key={tag} className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
+              #{tag}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Confidence indicator */}
       {showConfidence && (

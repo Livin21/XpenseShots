@@ -74,6 +74,7 @@ const SOURCE_COLORS = {
   'Kotak Bank': '#ca8a04',
   'Bank SMS': '#6b7280',
   'Manual': '#8b5cf6',
+  'Shared': '#14b8a6',
   'Unknown': '#6b7280',
 };
 
