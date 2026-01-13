@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
 import {
+  Link,
   Outlet,
   RouterProvider,
   createRootRoute,
@@ -12,24 +13,56 @@ import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import './styles.css'
 import reportWebVitals from './reportWebVitals.js'
 
-import App from './App.jsx'
+import { HomePage } from './routes/index.jsx'
+import { ExpensesPage } from './routes/expenses.jsx'
+
+// Root layout with navigation
+function RootLayout() {
+  return (
+    <div className="app-container">
+      <header className="app-header">
+        <Link to="/" className="app-title">
+          xpenseshots
+        </Link>
+        <nav className="app-nav">
+          <Link to="/" className="nav-link" activeProps={{ className: 'nav-link active' }}>
+            Home
+          </Link>
+          <Link to="/expenses" className="nav-link" activeProps={{ className: 'nav-link active' }}>
+            Expenses
+          </Link>
+        </nav>
+      </header>
+      <main className="app-main">
+        <Outlet />
+      </main>
+      <footer className="app-footer">
+        <div className="privacy-badge">
+          🔒 All data stays on your device
+        </div>
+      </footer>
+      <TanStackRouterDevtools position="bottom-right" />
+    </div>
+  )
+}
 
 const rootRoute = createRootRoute({
-  component: () => (
-    <>
-      <Outlet />
-      <TanStackRouterDevtools />
-    </>
-  ),
+  component: RootLayout,
 })
 
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  component: App,
+  component: HomePage,
 })
 
-const routeTree = rootRoute.addChildren([indexRoute])
+const expensesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/expenses',
+  component: ExpensesPage,
+})
+
+const routeTree = rootRoute.addChildren([indexRoute, expensesRoute])
 
 const router = createRouter({
   routeTree,
