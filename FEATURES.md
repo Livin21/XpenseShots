@@ -10,11 +10,14 @@
 - [ ] Average daily/weekly spending
 
 ## Search & Filters
-- [ ] Search by merchant name
-- [ ] Filter by date range
-- [ ] Filter by category
-- [ ] Filter by source (GPay, Swiggy, etc.)
-- [ ] Sort by amount, date, or merchant
+- [x] Search by merchant name
+- [x] Filter by date range (This Month, Last Month, Last 3 Months, This Year, All Time)
+- [x] Filter by category
+- [x] Filter by source (GPay, Swiggy, etc.)
+- [x] Sort by amount, date, or merchant
+- [x] Active filter badges with quick remove
+- [x] Filter count indicator on button
+- [x] Clear all filters option
 
 ## Export & Backup
 - [ ] Export to CSV/Excel
