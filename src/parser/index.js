@@ -4,6 +4,7 @@ import { classifyScreenshot } from './classifier.js';
 import { parseUpiReceipt } from './upi.js';
 import { parseFoodDelivery } from './food.js';
 import { parseInstamart } from './instamart.js';
+import { parseBankSms } from './banksms.js';
 import { ScreenshotTypes } from './types.js';
 
 const DEBUG = import.meta.env.DEV;
@@ -63,6 +64,10 @@ export function parseExpenseFromOcr(rawText) {
       log('Trying Instamart parser...');
       result = parseInstamart(normalizedLower, lines);
       break;
+    case ScreenshotTypes.BANK_SMS:
+      log('Trying Bank SMS parser...');
+      result = parseBankSms(normalizedLower);
+      break;
     default:
       log('Unknown type, trying fallback parsers...');
 
@@ -87,6 +92,14 @@ export function parseExpenseFromOcr(rawText) {
       result = parseInstamart(normalizedLower, lines);
       if (result) {
         log('Fallback Instamart parser succeeded');
+        break;
+      }
+
+      // Try bank SMS
+      log('Fallback: trying Bank SMS parser...');
+      result = parseBankSms(normalizedLower);
+      if (result) {
+        log('Fallback Bank SMS parser succeeded');
         break;
       }
 

@@ -41,6 +41,13 @@ function getSourceVariant(source) {
     'Swiggy': 'warning',
     'Zomato': 'destructive',
     'Instamart': 'success',
+    'ICICI Bank': 'secondary',
+    'HDFC Bank': 'info',
+    'Federal Bank': 'secondary',
+    'SBI': 'info',
+    'Axis Bank': 'destructive',
+    'Kotak Bank': 'warning',
+    'Bank SMS': 'secondary',
   };
   return sourceMap[source] || 'secondary';
 }

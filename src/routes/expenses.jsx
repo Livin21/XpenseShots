@@ -29,7 +29,19 @@ const CATEGORIES = [
   'Miscellaneous',
 ];
 
-const SOURCES = ['GPay', 'Swiggy', 'Zomato', 'Instamart'];
+const SOURCES = [
+  'GPay',
+  'Swiggy',
+  'Zomato',
+  'Instamart',
+  'ICICI Bank',
+  'HDFC Bank',
+  'Federal Bank',
+  'SBI',
+  'Axis Bank',
+  'Kotak Bank',
+  'Bank SMS',
+];
 
 const DATE_RANGES = [
   { label: 'All Time', value: 'all' },

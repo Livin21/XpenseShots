@@ -1,5 +1,5 @@
 /**
- * @typedef {'UPI_RECEIPT' | 'FOOD_DELIVERY' | 'QUICK_COMMERCE' | 'UNKNOWN'} ScreenshotType
+ * @typedef {'UPI_RECEIPT' | 'FOOD_DELIVERY' | 'QUICK_COMMERCE' | 'BANK_SMS' | 'UNKNOWN'} ScreenshotType
  */
 
 /**
@@ -18,5 +18,6 @@ export const ScreenshotTypes = {
   UPI_RECEIPT: 'UPI_RECEIPT',
   FOOD_DELIVERY: 'FOOD_DELIVERY',
   QUICK_COMMERCE: 'QUICK_COMMERCE',
+  BANK_SMS: 'BANK_SMS',
   UNKNOWN: 'UNKNOWN'
 };

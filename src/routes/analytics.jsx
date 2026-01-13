@@ -66,6 +66,13 @@ const SOURCE_COLORS = {
   'Swiggy': '#f97316',
   'Zomato': '#ef4444',
   'Instamart': '#22c55e',
+  'ICICI Bank': '#b45309',
+  'HDFC Bank': '#1d4ed8',
+  'Federal Bank': '#7c3aed',
+  'SBI': '#0891b2',
+  'Axis Bank': '#be123c',
+  'Kotak Bank': '#ca8a04',
+  'Bank SMS': '#6b7280',
   'Unknown': '#6b7280',
 };
 

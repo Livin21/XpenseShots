@@ -29,6 +29,55 @@ export function classifyScreenshot(text) {
   const t = text.toLowerCase();
   log('Classifying text of length:', t.length);
 
+  // Check for Bank SMS first (credit/debit card transaction alerts)
+  const bankSmsKeywords = [
+    'spent using',
+    'spent on your',
+    'credit card',
+    'debit card',
+    'bank card',
+    'avl limit',
+    'available limit',
+    'card ending',
+    'card xx',
+    'txn rs',
+    'not you',
+    'block cc',
+    'block card',
+  ];
+
+  const bankSmsIndicators = [
+    'icici',
+    'hdfc',
+    'federal bank',
+    'axis',
+    'kotak',
+    'sbi',
+    'idfc',
+    'yes bank',
+    'indusind',
+    'rbl',
+    'canara',
+    'pnb',
+    'bob',
+  ];
+
+  const hasBankSmsKeywords = hasAny(t, bankSmsKeywords);
+  const hasBankIndicator = hasAny(t, bankSmsIndicators);
+
+  log('Bank SMS keywords:', hasBankSmsKeywords, '| Bank indicator:', hasBankIndicator);
+
+  if (hasBankSmsKeywords && hasBankIndicator) {
+    log('Result: BANK_SMS');
+    return ScreenshotTypes.BANK_SMS;
+  }
+
+  // Strong bank SMS indicators (even without bank name)
+  if (hasAny(t, ['spent using', 'spent on your credit card', 'spent on your debit card', 'avl limit:', 'available limit'])) {
+    log('Result: BANK_SMS (strong indicators)');
+    return ScreenshotTypes.BANK_SMS;
+  }
+
   // Check for Instamart first (most specific)
   if (hasAny(t, ['instamart'])) {
     log('Result: QUICK_COMMERCE (instamart keyword)');

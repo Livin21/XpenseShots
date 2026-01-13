@@ -119,7 +119,7 @@ export function UploadDropzone({ onFileSelect, disabled = false }) {
           <div className="flex flex-wrap items-center justify-center gap-2 mt-6">
             <span className="text-xs text-muted-foreground">Supports:</span>
             <div className="flex flex-wrap justify-center gap-1">
-              {['GPay', 'Swiggy', 'Zomato', 'Instamart'].map((source) => (
+              {['GPay', 'Swiggy', 'Zomato', 'Instamart', 'Bank SMS'].map((source) => (
                 <span
                   key={source}
                   className="px-2 py-0.5 text-xs rounded-full bg-secondary text-secondary-foreground"

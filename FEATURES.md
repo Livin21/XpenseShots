@@ -29,7 +29,7 @@
 - [ ] PhonePe receipts
 - [ ] Paytm receipts
 - [ ] Amazon order screenshots
-- [ ] Bank SMS parsing
+- [x] Bank SMS parsing (ICICI, HDFC, Federal Bank, SBI, Axis, Kotak, and generic)
 - [ ] Generic receipt OCR improvement
 
 ## Organization
