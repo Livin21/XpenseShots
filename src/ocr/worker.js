@@ -45,6 +45,15 @@ export async function recognizeText(imageBlob, onProgress) {
 
   const w = await initWorker(onProgress);
 
+  // Set parameters for better recognition of receipts
+  await w.setParameters({
+    // PSM 6 = Assume a single uniform block of text (good for receipts)
+    tessedit_pageseg_mode: '6',
+    // Whitelist characters to reduce misrecognition
+    // Includes digits, letters, currency symbols, and common punctuation
+    tessedit_char_whitelist: '0123456789₹.,:-@/\\()[]{}abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ ',
+  });
+
   const startTime = performance.now();
   const { data } = await w.recognize(imageBlob);
   const duration = performance.now() - startTime;

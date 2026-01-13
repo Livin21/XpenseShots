@@ -147,9 +147,9 @@ export function parseUpiReceipt(text, lines) {
   amount = extractAmountNearLabel(lines, ['total amount', 'paid', 'amount'], AMOUNT_OPTIONS);
   if (amount) log('Found via label:', amount);
 
-  // Strategy 2: Look for largest amount, excluding fees
+  // Strategy 2: Look for largest amount, excluding fees and dates
   if (!amount) {
-    log('Strategy 2: Looking for largest amount excluding fees...');
+    log('Strategy 2: Looking for largest amount excluding fees/dates...');
     const excludeKeywords = [
       'platform fee',
       'gst',
@@ -164,11 +164,15 @@ export function parseUpiReceipt(text, lines) {
     const allAmounts = [];
     for (const line of lines) {
       if (excludeKeywords.some(k => line.includes(k))) continue;
+      // Skip lines that look like dates (contain month names)
+      if (/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b/i.test(line)) continue;
+      // Skip lines with transaction IDs (long numbers)
+      if (/\b\d{10,}\b/.test(line)) continue;
       const lineAmounts = extractAmounts(line, AMOUNT_OPTIONS);
       allAmounts.push(...lineAmounts);
     }
 
-    log('Amounts found (excluding fees):', allAmounts);
+    log('Amounts found (excluding fees/dates):', allAmounts);
     if (allAmounts.length > 0) {
       amount = Math.max(...allAmounts);
       log('Using max:', amount);
@@ -182,7 +186,18 @@ export function parseUpiReceipt(text, lines) {
     log('All amounts in text:', amounts);
     if (amounts.length > 0) {
       // Filter to reasonable transaction amounts
-      const validAmounts = amounts.filter(a => a >= 1 && a <= 100000);
+      // Exclude year-like numbers (2020-2030) which are likely dates
+      const validAmounts = amounts.filter(a => {
+        if (a >= 1 && a <= 100000) {
+          // Reject numbers that look like years (2020-2030)
+          if (a >= 2020 && a <= 2030) {
+            log('Rejecting year-like amount:', a);
+            return false;
+          }
+          return true;
+        }
+        return false;
+      });
       if (validAmounts.length > 0) {
         amount = Math.max(...validAmounts);
         log('Using max valid:', amount);

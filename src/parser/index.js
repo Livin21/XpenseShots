@@ -1,4 +1,5 @@
 import { normalizeText, splitLines } from './normalize.js';
+import { normalizeOcrText } from '../ocr/normalizeOcr.js';
 import { classifyScreenshot } from './classifier.js';
 import { parseUpiReceipt } from './upi.js';
 import { parseFoodDelivery } from './food.js';
@@ -24,8 +25,14 @@ export function parseExpenseFromOcr(rawText) {
 
   log('Starting parse, raw text length:', rawText.length);
 
+  // Step 1: Basic text normalization (currency symbols, whitespace)
   const normalized = normalizeText(rawText);
-  const normalizedLower = normalized.toLowerCase();
+
+  // Step 2: OCR-specific normalization (fix amounts, mask non-amounts)
+  const ocrNormalized = normalizeOcrText(normalized);
+
+  // Step 3: Lowercase and split for parsing
+  const normalizedLower = ocrNormalized.toLowerCase();
   const lines = splitLines(normalizedLower);
 
   log('Normalized text length:', normalizedLower.length);

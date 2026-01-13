@@ -70,21 +70,30 @@ export async function preprocessImage(imageFile) {
 
   // Process each pixel
   for (let i = 0; i < data.length; i += 4) {
-    // Grayscale using luminance formula
-    let gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
 
-    // Invert if dark mode (makes light text on dark bg -> dark text on light bg)
+    let final;
     if (isDark) {
-      gray = 255 - gray;
+      // For dark mode: MINIMAL processing - just invert
+      // Use max channel to capture colored text (green amounts, etc.)
+      const max = Math.max(r, g, b);
+      // Simple inversion - no contrast, no thresholding
+      // This preserves the original text shapes better for OCR
+      final = 255 - max;
+    } else {
+      // For light mode: standard grayscale with contrast and thresholding
+      let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+
+      // Apply contrast enhancement
+      const contrast = 1.8;
+      let adjusted = ((gray - 128) * contrast) + 128;
+      adjusted = Math.max(0, Math.min(255, adjusted));
+
+      // Apply thresholding
+      final = adjusted > 180 ? 255 : (adjusted < 75 ? 0 : adjusted);
     }
-
-    // Increase contrast
-    const contrast = 1.8;
-    let adjusted = ((gray - 128) * contrast) + 128;
-    adjusted = Math.max(0, Math.min(255, adjusted));
-
-    // Apply slight sharpening threshold
-    const final = adjusted > 180 ? 255 : (adjusted < 75 ? 0 : adjusted);
 
     data[i] = final;     // R
     data[i + 1] = final; // G
