@@ -1,6 +1,9 @@
-import { extractAmounts, extractAmountNearLabel, parseDate, titleCase } from './utils.js';
+import { extractAmounts, extractAmountNearLabel, parseDate, titleCase, fixMisreadRupeeAmount } from './utils.js';
 
 const DEBUG = import.meta.env.DEV;
+
+// Options for amount extraction - fix ₹ being misread as "3"
+const AMOUNT_OPTIONS = { fixMisreadRupee: true };
 
 function log(...args) {
   if (DEBUG) console.log('[Food Parser]', ...args);
@@ -20,32 +23,47 @@ function extractRestaurant(lines, fullText) {
 
   for (let i = 0; i < Math.min(lines.length, 15); i++) {
     const line = lines[i].trim();
+    // Clean version for checking - remove OCR artifacts like stray ₹ symbols
+    const cleanLine = line.replace(/₹/g, 's').replace(/[^\w\s.'&-]/g, '');
 
     // Skip common header/status text
-    if (/order details|order was|delivered|support|help|bill/i.test(line)) continue;
+    if (/order details|order was|delivered|support|help|bill/i.test(cleanLine)) continue;
     // Skip order IDs
-    if (/order\s*(id|#)|#\d{5,}/i.test(line)) continue;
-    // Skip amounts and prices
-    if (/₹|rs\.?|\d{3,}/i.test(line)) continue;
+    if (/order\s*(id|#)|#\d{5,}/i.test(cleanLine)) continue;
+    // Skip lines that are primarily prices (₹ followed by numbers)
+    if (/₹\s*\d+/.test(line)) continue;
+    // Skip lines with large numbers (likely prices)
+    if (/\d{3,}/.test(line) && !/dhaba|hotel|restaurant|cafe|kitchen|foods?|biryani/i.test(cleanLine)) continue;
     // Skip item listings (1x, 2x, etc.)
     if (/^\d+\s*x\s/i.test(line)) continue;
     // Skip dates
     if (/\d{1,2}\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(line)) continue;
     // Skip location/address indicators
-    if (/kakkanad|kochi|kerala|india|infopark|road|tower|building/i.test(line)) continue;
+    if (/kakkanad|kochi|kerala|india|infopark|road|tower|building|pin\s*code/i.test(cleanLine)) continue;
+    // Skip swiggy/zomato UI elements
+    if (/swiggy|zomato|reorder|track|rating|review|download/i.test(cleanLine)) continue;
 
     // Look for business-like names (letters with optional spaces)
-    if (/^[a-z][a-z\s.'&-]{2,25}$/i.test(line) && line.length >= 3) {
-      log('Restaurant found via header scan:', line);
-      return titleCase(line);
+    // Check clean version but use original line with proper cleaning
+    if (/^[a-z][a-z\s.'&-]{2,30}$/i.test(cleanLine) && cleanLine.length >= 3 && cleanLine.length <= 35) {
+      log('Restaurant found via header scan:', cleanLine, '(original:', line, ')');
+      return titleCase(cleanLine);
     }
   }
 
-  // Try to find restaurant from context
+  // Try to find restaurant from context - "from [restaurant]"
   const restaurantMatch = fullText.match(/from\s+([a-z][a-z\s.&']{2,25})/i);
   if (restaurantMatch) {
     log('Restaurant found via "from" pattern:', restaurantMatch[1].trim());
     return titleCase(restaurantMatch[1].trim());
+  }
+
+  // Try to find common restaurant name patterns
+  const dhabaMatch = fullText.match(/([a-z]+\s*(?:dhaba|hotel|kitchen|cafe|restaurant|biryani|foods?))/i);
+  if (dhabaMatch) {
+    const name = dhabaMatch[1].replace(/₹/g, 's').trim();
+    log('Restaurant found via keyword pattern:', name);
+    return titleCase(name);
   }
 
   log('Restaurant not found, using default');
@@ -84,7 +102,7 @@ export function parseFoodDelivery(text, lines) {
     'grand total',
     'total',
     'amount paid'
-  ]);
+  ], AMOUNT_OPTIONS);
   if (amount) log('Found via label:', amount);
 
   // Strategy 2: Look for specific patterns in lines
@@ -94,7 +112,7 @@ export function parseFoodDelivery(text, lines) {
       // Match patterns like "Paid ₹664.70" or "Bill Total ₹640.00"
       const match = line.match(/(bill total|paid|grand total|total)\s*₹?\s*([0-9,]+(?:\.[0-9]{1,2})?)/i);
       if (match) {
-        amount = parseFloat(match[2].replace(/,/g, ''));
+        amount = fixMisreadRupeeAmount(parseFloat(match[2].replace(/,/g, '')));
         log('Found via pattern:', amount, 'in line:', line);
         break;
       }
@@ -123,7 +141,7 @@ export function parseFoodDelivery(text, lines) {
       // Skip item listings (1x, 2x, etc.) - these are individual item prices
       if (/^\d+\s*x\s/i.test(line) || /x\s*\d+/i.test(line)) continue;
 
-      const lineAmounts = extractAmounts(line);
+      const lineAmounts = extractAmounts(line, AMOUNT_OPTIONS);
       amounts.push(...lineAmounts);
     }
 
@@ -137,7 +155,7 @@ export function parseFoodDelivery(text, lines) {
   // Strategy 4: Just find the largest reasonable amount
   if (!amount) {
     log('Strategy 4: Looking for any reasonable amount...');
-    const allAmounts = extractAmounts(text).filter(a => a >= 50 && a <= 10000);
+    const allAmounts = extractAmounts(text, AMOUNT_OPTIONS).filter(a => a >= 50 && a <= 10000);
     log('All reasonable amounts:', allAmounts);
     if (allAmounts.length > 0) {
       amount = Math.max(...allAmounts);

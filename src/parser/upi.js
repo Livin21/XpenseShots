@@ -2,6 +2,9 @@ import { extractAmounts, extractAmountNearLabel, parseDate, titleCase } from './
 
 const DEBUG = import.meta.env.DEV;
 
+// Options for amount extraction - fix ₹ being misread as "3"
+const AMOUNT_OPTIONS = { fixMisreadRupee: true };
+
 function log(...args) {
   if (DEBUG) console.log('[UPI Parser]', ...args);
 }
@@ -141,7 +144,7 @@ export function parseUpiReceipt(text, lines) {
 
   // Strategy 1: Look for "total amount" or "paid" labels
   log('Strategy 1: Looking for labeled amounts...');
-  amount = extractAmountNearLabel(lines, ['total amount', 'paid', 'amount']);
+  amount = extractAmountNearLabel(lines, ['total amount', 'paid', 'amount'], AMOUNT_OPTIONS);
   if (amount) log('Found via label:', amount);
 
   // Strategy 2: Look for largest amount, excluding fees
@@ -161,7 +164,7 @@ export function parseUpiReceipt(text, lines) {
     const allAmounts = [];
     for (const line of lines) {
       if (excludeKeywords.some(k => line.includes(k))) continue;
-      const lineAmounts = extractAmounts(line);
+      const lineAmounts = extractAmounts(line, AMOUNT_OPTIONS);
       allAmounts.push(...lineAmounts);
     }
 
@@ -175,7 +178,7 @@ export function parseUpiReceipt(text, lines) {
   // Strategy 3: Just get the largest prominent amount
   if (!amount) {
     log('Strategy 3: Looking for any reasonable amount...');
-    const amounts = extractAmounts(text);
+    const amounts = extractAmounts(text, AMOUNT_OPTIONS);
     log('All amounts in text:', amounts);
     if (amounts.length > 0) {
       // Filter to reasonable transaction amounts

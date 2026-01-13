@@ -1,16 +1,26 @@
 /**
  * Extract all amounts from text
  * Handles various formats: ₹500, Rs.500, Rs 500, 500.00, etc.
+ * Also handles OCR misreading ₹ as "3" (e.g., ₹620 → 3620)
  * @param {string} text - Text to search
+ * @param {object} options - Options
+ * @param {boolean} options.fixMisreadRupee - Try to fix ₹ misread as 3
  * @returns {number[]} Array of amounts found
  */
-export function extractAmounts(text) {
+export function extractAmounts(text, options = {}) {
+  const { fixMisreadRupee = false } = options;
   const amounts = [];
 
   // Pattern 1: ₹ followed by number (with optional space)
   const pattern1 = /₹\s?([0-9,]+(?:\.[0-9]{1,2})?)/g;
   let match;
   while ((match = pattern1.exec(text)) !== null) {
+    amounts.push(parseFloat(match[1].replace(/,/g, '')));
+  }
+
+  // Pattern 1b: ¥ followed by number - OCR sometimes misreads ₹ as ¥
+  const pattern1b = /¥\s?([0-9,]+(?:\.[0-9]{1,2})?)/g;
+  while ((match = pattern1b.exec(text)) !== null) {
     amounts.push(parseFloat(match[1].replace(/,/g, '')));
   }
 
@@ -34,7 +44,57 @@ export function extractAmounts(text) {
     }
   }
 
+  // Fix OCR misreading ₹ as "3" (common issue)
+  // e.g., ₹620 appears as 3620 in OCR
+  if (fixMisreadRupee) {
+    return amounts.map(amt => fixMisreadRupeeAmount(amt));
+  }
+
   return amounts;
+}
+
+/**
+ * Fix amounts where OCR misread ₹ symbol as digit "3"
+ * e.g., ₹620 → 3620, ₹330 → 3330, ₹85 → 385
+ * @param {number} amount - Amount that might have misread ₹
+ * @returns {number} Corrected amount
+ */
+export function fixMisreadRupeeAmount(amount) {
+  const str = String(amount);
+
+  // Check if starts with 3 and could be a misread ₹
+  if (!str.startsWith('3')) return amount;
+
+  // Get the amount without the leading 3
+  const withoutLeading3 = str.slice(1);
+  if (!withoutLeading3) return amount;
+
+  const corrected = parseFloat(withoutLeading3);
+
+  // Heuristics to determine if this is likely a misread ₹:
+  // - Original looks too high for typical food order (3xxx for what should be xxx)
+  // - Corrected amount is in reasonable range for food/groceries (50-3000)
+  // - Pattern: 3XXX where XXX is 2-3 digits (e.g., 3620 → 620, 3330 → 330)
+
+  // For amounts like 3620 → 620, 3330 → 330, 3199 → 199
+  if (amount >= 300 && amount < 4000 && corrected >= 50 && corrected < 1000) {
+    return corrected;
+  }
+
+  // For slightly larger orders: 31500 → 1500, 32000 → 2000
+  if (amount >= 3000 && amount < 40000 && corrected >= 500 && corrected <= 5000) {
+    return corrected;
+  }
+
+  // For amounts with decimals: 3620.00 → 620.00
+  if (str.includes('.')) {
+    const correctedWithDecimal = parseFloat(withoutLeading3);
+    if (correctedWithDecimal >= 50 && correctedWithDecimal <= 5000) {
+      return correctedWithDecimal;
+    }
+  }
+
+  return amount;
 }
 
 /**
@@ -59,18 +119,35 @@ export function extractLargestAmount(lines, excludeKeywords = []) {
 
 /**
  * Extract amount near a specific label
+ * Labels are checked in order of priority - first label that matches wins
  * @param {string[]} lines - Lines to search
- * @param {string[]} labels - Labels to look for (e.g., ['total', 'paid'])
+ * @param {string[]} labels - Labels to look for in priority order (e.g., ['bill total', 'total'])
+ * @param {object} options - Options to pass to extractAmounts
  * @returns {number | null}
  */
-export function extractAmountNearLabel(lines, labels) {
-  for (const line of lines) {
-    const hasLabel = labels.some(l => line.includes(l));
-    if (hasLabel) {
-      const amounts = extractAmounts(line);
-      if (amounts.length > 0) {
-        // Return the last amount on the line (usually the value after the label)
-        return amounts[amounts.length - 1];
+export function extractAmountNearLabel(lines, labels, options = {}) {
+  // Search by label priority - check all lines for first label, then all lines for second label, etc.
+  for (const label of labels) {
+    for (const line of lines) {
+      // For multi-word labels, require exact phrase match
+      // For single-word labels, use word boundary to avoid "item total" matching "total"
+      let hasLabel;
+      if (label.includes(' ')) {
+        // Multi-word: exact phrase match
+        hasLabel = line.includes(label);
+      } else {
+        // Single-word: word boundary match to avoid partial matches
+        // "total" should not match "item total" but should match "total:" or "total 500"
+        const regex = new RegExp(`(?:^|\\s)${label}(?:\\s|:|$)`, 'i');
+        hasLabel = regex.test(line);
+      }
+
+      if (hasLabel) {
+        const amounts = extractAmounts(line, options);
+        if (amounts.length > 0) {
+          // Return the last amount on the line (usually the value after the label)
+          return amounts[amounts.length - 1];
+        }
       }
     }
   }

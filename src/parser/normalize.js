@@ -7,8 +7,11 @@ export function normalizeText(raw) {
   return raw
     // Normalize currency symbols - handle various OCR outputs
     .replace(/\u20b9/g, '₹')           // Unicode rupee sign
-    .replace(/rs\.?\s*/gi, '₹')        // Rs. or Rs
-    .replace(/inr\s*/gi, '₹')          // INR
+    // Only replace "Rs" when it's a currency indicator (not part of words like "Harsh")
+    // Must be: start of string/word boundary + Rs + optional dot + space/number
+    .replace(/(?:^|(?<=\s))rs\.?\s*(?=\d)/gi, '₹')  // "Rs 500" or "Rs.500"
+    .replace(/(?:^|(?<=\s))rs\.(?=\s)/gi, '₹')     // "Rs. " followed by space
+    .replace(/inr\s*(?=\d)/gi, '₹')    // INR before number
     .replace(/₹\s+/g, '₹')             // Remove space after ₹
     // Common OCR mistakes
     .replace(/[|l1]/g, (match, offset, str) => {
@@ -21,11 +24,11 @@ export function normalizeText(raw) {
     })
     .replace(/[oO](?=\d)/g, '0')       // O before digit -> 0
     .replace(/(?<=\d)[oO]/g, '0')      // O after digit -> 0
-    // Normalize whitespace
-    .replace(/\s+/g, ' ')
-    // Normalize newlines for line splitting
+    // Normalize newlines FIRST (before whitespace normalization)
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n')
+    // Normalize horizontal whitespace only (preserve newlines)
+    .replace(/[^\S\n]+/g, ' ')
     .trim();
 }
 

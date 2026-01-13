@@ -1,6 +1,9 @@
-import { extractAmounts, extractAmountNearLabel, parseDate } from './utils.js';
+import { extractAmounts, extractAmountNearLabel, parseDate, fixMisreadRupeeAmount } from './utils.js';
 
 const DEBUG = import.meta.env.DEV;
+
+// Options for amount extraction - fix ₹ being misread as "3"
+const AMOUNT_OPTIONS = { fixMisreadRupee: true };
 
 function log(...args) {
   if (DEBUG) console.log('[Instamart Parser]', ...args);
@@ -23,7 +26,7 @@ export function parseInstamart(text, lines) {
     'total',
     'amount paid',
     'paid'
-  ]);
+  ], AMOUNT_OPTIONS);
   if (amount) log('Found via label:', amount);
 
   // Strategy 2: Look for specific patterns
@@ -32,7 +35,7 @@ export function parseInstamart(text, lines) {
     for (const line of lines) {
       const match = line.match(/(grand total|total|paid)\s*₹?\s*([0-9,]+(?:\.[0-9]{1,2})?)/i);
       if (match) {
-        amount = parseFloat(match[2].replace(/,/g, ''));
+        amount = fixMisreadRupeeAmount(parseFloat(match[2].replace(/,/g, '')));
         log('Found via pattern:', amount, 'in line:', line);
         break;
       }
@@ -55,7 +58,7 @@ export function parseInstamart(text, lines) {
       // Skip individual item prices (1x, etc.)
       if (/^\d+\s*x\s/i.test(line)) continue;
 
-      const lineAmounts = extractAmounts(line);
+      const lineAmounts = extractAmounts(line, AMOUNT_OPTIONS);
       amounts.push(...lineAmounts);
     }
 
@@ -69,7 +72,7 @@ export function parseInstamart(text, lines) {
   // Strategy 4: Fallback to largest reasonable amount
   if (!amount) {
     log('Strategy 4: Looking for any reasonable amount...');
-    const allAmounts = extractAmounts(text).filter(a => a >= 50 && a <= 50000);
+    const allAmounts = extractAmounts(text, AMOUNT_OPTIONS).filter(a => a >= 50 && a <= 50000);
     log('All reasonable amounts:', allAmounts);
     if (allAmounts.length > 0) {
       amount = Math.max(...allAmounts);
