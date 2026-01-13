@@ -8,7 +8,7 @@ import {
   createRoute,
   createRouter,
 } from '@tanstack/react-router'
-import { Home, Receipt, Shield, Zap, BarChart3 } from 'lucide-react'
+import { Home, Receipt, Shield, Zap, BarChart3, Settings } from 'lucide-react'
 
 import './styles.css'
 import reportWebVitals from './reportWebVitals.js'
@@ -16,6 +16,7 @@ import reportWebVitals from './reportWebVitals.js'
 import { HomePage } from './routes/index.jsx'
 import { ExpensesPage } from './routes/expenses.jsx'
 import { AnalyticsPage } from './routes/analytics.jsx'
+import { SettingsPage } from './routes/settings.jsx'
 
 // Root layout with navigation
 function RootLayout() {
@@ -54,6 +55,14 @@ function RootLayout() {
             >
               <BarChart3 className="w-4 h-4" />
               <span className="hidden sm:inline">Analytics</span>
+            </Link>
+            <Link
+              to="/settings"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-200"
+              activeProps={{ className: 'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary/20 text-primary' }}
+            >
+              <Settings className="w-4 h-4" />
+              <span className="hidden sm:inline">Settings</span>
             </Link>
           </nav>
         </div>
@@ -98,7 +107,13 @@ const analyticsRoute = createRoute({
   component: AnalyticsPage,
 })
 
-const routeTree = rootRoute.addChildren([indexRoute, expensesRoute, analyticsRoute])
+const settingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/settings',
+  component: SettingsPage,
+})
+
+const routeTree = rootRoute.addChildren([indexRoute, expensesRoute, analyticsRoute, settingsRoute])
 
 const router = createRouter({
   routeTree,
