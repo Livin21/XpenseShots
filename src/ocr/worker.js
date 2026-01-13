@@ -1,21 +1,36 @@
 import { createWorker } from 'tesseract.js';
 
+const DEBUG = import.meta.env.DEV;
+
+function log(...args) {
+  if (DEBUG) console.log('[OCR]', ...args);
+}
+
 let worker = null;
 
 /**
  * Initialize Tesseract worker
  */
 async function initWorker(onProgress) {
-  if (worker) return worker;
+  if (worker) {
+    log('Reusing existing worker');
+    return worker;
+  }
+
+  log('Initializing Tesseract worker...');
 
   worker = await createWorker('eng', 1, {
     logger: (m) => {
+      if (DEBUG && m.status) {
+        log('Status:', m.status, m.progress ? `(${Math.round(m.progress * 100)}%)` : '');
+      }
       if (m.status === 'recognizing text' && onProgress) {
         onProgress(m.progress);
       }
     }
   });
 
+  log('Worker initialized');
   return worker;
 }
 
@@ -26,9 +41,23 @@ async function initWorker(onProgress) {
  * @returns {Promise<{text: string, confidence: number}>}
  */
 export async function recognizeText(imageBlob, onProgress) {
+  log('Starting OCR, blob size:', imageBlob.size);
+
   const w = await initWorker(onProgress);
 
+  const startTime = performance.now();
   const { data } = await w.recognize(imageBlob);
+  const duration = performance.now() - startTime;
+
+  log('OCR completed in', Math.round(duration), 'ms');
+  log('Confidence:', data.confidence);
+  log('Text length:', data.text.length, 'characters');
+
+  if (DEBUG) {
+    console.log('[OCR] ========== RAW TEXT START ==========');
+    console.log(data.text);
+    console.log('[OCR] ========== RAW TEXT END ==========');
+  }
 
   return {
     text: data.text,
@@ -41,6 +70,7 @@ export async function recognizeText(imageBlob, onProgress) {
  */
 export async function terminateWorker() {
   if (worker) {
+    log('Terminating worker');
     await worker.terminate();
     worker = null;
   }
