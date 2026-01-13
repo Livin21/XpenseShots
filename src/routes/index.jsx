@@ -3,6 +3,7 @@ import { UploadDropzone } from '../components/UploadDropzone.jsx';
 import { ExpenseCard } from '../components/ExpenseCard.jsx';
 import { ExpenseList } from '../components/ExpenseList.jsx';
 import { ConfidenceReview } from '../components/ConfidenceReview.jsx';
+import { EditExpenseModal } from '../components/EditExpenseModal.jsx';
 import { useOcr } from '../hooks/useOcr.js';
 import { useParseExpense } from '../hooks/useParseExpense.js';
 import { useExpenses } from '../hooks/useExpenses.js';
@@ -13,9 +14,10 @@ import { useExpenses } from '../hooks/useExpenses.js';
 export function HomePage() {
   const { status, progress, text, imageHash, error, processImage, reset } = useOcr();
   const { expense, needsReview } = useParseExpense(text, imageHash);
-  const { expenses, add, exists, refresh } = useExpenses({ recent: true, limit: 5 });
+  const { expenses, add, update, remove, exists, refresh } = useExpenses({ recent: true, limit: 5 });
   const [showReview, setShowReview] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null); // 'saving' | 'saved' | 'duplicate' | 'error'
+  const [editingExpense, setEditingExpense] = useState(null);
 
   // Auto-save high confidence expenses
   useEffect(() => {
@@ -66,6 +68,28 @@ export function HomePage() {
     setSaveStatus(null);
     setShowReview(false);
   }, [reset]);
+
+  const handleEditExpense = (expense) => {
+    setEditingExpense(expense);
+  };
+
+  const handleSaveExpense = async (updates) => {
+    if (editingExpense) {
+      await update(editingExpense.id, updates);
+      setEditingExpense(null);
+    }
+  };
+
+  const handleDeleteExpense = async () => {
+    if (editingExpense) {
+      await remove(editingExpense.id);
+      setEditingExpense(null);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingExpense(null);
+  };
 
   const isProcessing = status === 'preprocessing' || status === 'recognizing';
 
@@ -151,8 +175,19 @@ export function HomePage() {
           expenses={expenses}
           emptyMessage="No expenses yet. Upload a screenshot to get started!"
           compact
+          onEditExpense={handleEditExpense}
         />
       </div>
+
+      {/* Edit Modal */}
+      {editingExpense && (
+        <EditExpenseModal
+          expense={editingExpense}
+          onSave={handleSaveExpense}
+          onCancel={handleCancelEdit}
+          onDelete={handleDeleteExpense}
+        />
+      )}
     </div>
   );
 }

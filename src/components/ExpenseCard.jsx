@@ -37,10 +37,11 @@ function getConfidenceClass(confidence) {
  * @param {{
  *   expense: import('../parser/types.js').ParsedExpense & { id?: string },
  *   showConfidence?: boolean,
- *   compact?: boolean
+ *   compact?: boolean,
+ *   onEdit?: () => void
  * }} props
  */
-export function ExpenseCard({ expense, showConfidence = false, compact = false }) {
+export function ExpenseCard({ expense, showConfidence = false, compact = false, onEdit }) {
   const { amount, merchant, category, date, source, confidence } = expense;
 
   return (
@@ -53,6 +54,11 @@ export function ExpenseCard({ expense, showConfidence = false, compact = false }
         <span className="expense-category">{category}</span>
         <span className="expense-source">{source}</span>
         <span className="expense-date">{formatDate(date)}</span>
+        {onEdit && (
+          <button className="expense-edit-btn" onClick={onEdit} title="Edit expense">
+            ✏️
+          </button>
+        )}
       </div>
       {showConfidence && (
         <div className={`expense-confidence ${getConfidenceClass(confidence)}`}>

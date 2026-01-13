@@ -55,3 +55,25 @@ export async function expenseExists(id) {
   const expense = await db.expenses.get(id);
   return !!expense;
 }
+
+/**
+ * Update an existing expense
+ * @param {string} id - Expense id
+ * @param {Partial<import('./db.js').Expense>} updates - Fields to update
+ * @returns {Promise<void>}
+ */
+export async function updateExpense(id, updates) {
+  await db.expenses.update(id, {
+    ...updates,
+    updatedAt: new Date().toISOString()
+  });
+}
+
+/**
+ * Get a single expense by id
+ * @param {string} id
+ * @returns {Promise<import('./db.js').Expense | undefined>}
+ */
+export async function getExpense(id) {
+  return db.expenses.get(id);
+}

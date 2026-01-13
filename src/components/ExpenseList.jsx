@@ -7,14 +7,16 @@ import { EmptyState } from './EmptyState.jsx';
  *   expenses: Array<import('../parser/types.js').ParsedExpense & { id: string }>,
  *   loading?: boolean,
  *   emptyMessage?: string,
- *   compact?: boolean
+ *   compact?: boolean,
+ *   onEditExpense?: (expense: import('../parser/types.js').ParsedExpense & { id: string }) => void
  * }} props
  */
 export function ExpenseList({
   expenses,
   loading = false,
   emptyMessage = 'No expenses yet',
-  compact = false
+  compact = false,
+  onEditExpense
 }) {
   if (loading) {
     return <div className="expense-list-loading">Loading...</div>;
@@ -27,7 +29,12 @@ export function ExpenseList({
   return (
     <div className="expense-list">
       {expenses.map((expense) => (
-        <ExpenseCard key={expense.id} expense={expense} compact={compact} />
+        <ExpenseCard
+          key={expense.id}
+          expense={expense}
+          compact={compact}
+          onEdit={onEditExpense ? () => onEditExpense(expense) : undefined}
+        />
       ))}
     </div>
   );

@@ -4,6 +4,7 @@ import {
   getRecentExpenses,
   addExpense,
   deleteExpense,
+  updateExpense,
   expenseExists
 } from '../storage/expenses.js';
 
@@ -14,6 +15,7 @@ import {
  *   expenses: import('../storage/db.js').Expense[],
  *   loading: boolean,
  *   add: (expense: import('../storage/db.js').Expense) => Promise<string>,
+ *   update: (id: string, updates: Partial<import('../storage/db.js').Expense>) => Promise<void>,
  *   remove: (id: string) => Promise<void>,
  *   exists: (id: string) => Promise<boolean>,
  *   refresh: () => Promise<void>
@@ -45,6 +47,11 @@ export function useExpenses({ recent = false, limit = 5 } = {}) {
     return id;
   }, [loadExpenses]);
 
+  const update = useCallback(async (id, updates) => {
+    await updateExpense(id, updates);
+    await loadExpenses();
+  }, [loadExpenses]);
+
   const remove = useCallback(async (id) => {
     await deleteExpense(id);
     await loadExpenses();
@@ -58,6 +65,7 @@ export function useExpenses({ recent = false, limit = 5 } = {}) {
     expenses,
     loading,
     add,
+    update,
     remove,
     exists,
     refresh: loadExpenses
