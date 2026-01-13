@@ -41,6 +41,7 @@ const SOURCES = [
   'Axis Bank',
   'Kotak Bank',
   'Bank SMS',
+  'Manual',
 ];
 
 const DATE_RANGES = [

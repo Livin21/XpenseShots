@@ -48,6 +48,7 @@ function getSourceVariant(source) {
     'Axis Bank': 'destructive',
     'Kotak Bank': 'warning',
     'Bank SMS': 'secondary',
+    'Manual': 'outline',
   };
   return sourceMap[source] || 'secondary';
 }

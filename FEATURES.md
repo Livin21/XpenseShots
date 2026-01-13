@@ -32,6 +32,11 @@
 - [x] Bank SMS parsing (ICICI, HDFC, Federal Bank, SBI, Axis, Kotak, and generic)
 - [ ] Generic receipt OCR improvement
 
+## Manual Entry
+- [x] Manual expense entry form
+- [x] Amount, merchant, category, date fields
+- [x] Instant save without parsing
+
 ## Organization
 - [ ] Custom categories (add/edit/delete)
 - [ ] Tags for expenses (e.g., "trip", "office", "reimbursable")

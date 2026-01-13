@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
-import { AlertCircle, CheckCircle2, Copy, Loader2, ImagePlus, MessageSquareText } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Copy, Loader2, ImagePlus, MessageSquareText, PenLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { UploadDropzone } from '../components/UploadDropzone.jsx';
 import { ExpenseCard } from '../components/ExpenseCard.jsx';
@@ -13,15 +14,34 @@ import { useParseExpense } from '../hooks/useParseExpense.js';
 import { useExpenses } from '../hooks/useExpenses.js';
 import { parseBankSms } from '../parser/banksms.js';
 
+const CATEGORIES = [
+  'Food & Dining',
+  'Groceries',
+  'Utilities',
+  'Subscriptions',
+  'Shopping',
+  'Transport',
+  'Entertainment',
+  'Health',
+  'Miscellaneous',
+];
+
 /**
- * Generate a simple hash for SMS text
+ * Generate a simple hash from text
  */
-async function generateSmsHash(text) {
+async function generateHash(text) {
   const encoder = new TextEncoder();
   const data = encoder.encode(text);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+}
+
+/**
+ * Format date for input[type="date"]
+ */
+function formatDateForInput(date) {
+  return date.toISOString().split('T')[0];
 }
 
 /**
@@ -35,7 +55,7 @@ export function HomePage() {
   const [saveStatus, setSaveStatus] = useState(null);
   const [editingExpense, setEditingExpense] = useState(null);
 
-  // Input mode: 'screenshot' | 'sms'
+  // Input mode: 'screenshot' | 'sms' | 'manual'
   const [inputMode, setInputMode] = useState('screenshot');
 
   // SMS input state
@@ -43,6 +63,14 @@ export function HomePage() {
   const [smsExpense, setSmsExpense] = useState(null);
   const [smsError, setSmsError] = useState(null);
   const [smsNeedsReview, setSmsNeedsReview] = useState(false);
+
+  // Manual entry state
+  const [manualAmount, setManualAmount] = useState('');
+  const [manualMerchant, setManualMerchant] = useState('');
+  const [manualCategory, setManualCategory] = useState('Food & Dining');
+  const [manualDate, setManualDate] = useState(formatDateForInput(new Date()));
+  const [manualExpense, setManualExpense] = useState(null);
+  const [manualError, setManualError] = useState(null);
 
   // Auto-save high confidence expenses (screenshot mode)
   useEffect(() => {
@@ -99,6 +127,12 @@ export function HomePage() {
     setSmsExpense(null);
     setSmsError(null);
     setSmsNeedsReview(false);
+    setManualAmount('');
+    setManualMerchant('');
+    setManualCategory('Food & Dining');
+    setManualDate(formatDateForInput(new Date()));
+    setManualExpense(null);
+    setManualError(null);
   }, [reset]);
 
   // Handle SMS paste/parse
@@ -119,7 +153,7 @@ export function HomePage() {
       }
 
       // Generate hash for deduplication
-      const hash = await generateSmsHash(smsText);
+      const hash = await generateHash(smsText);
       const expenseWithId = { ...parsed, id: hash };
 
       setSmsExpense(expenseWithId);
@@ -142,6 +176,52 @@ export function HomePage() {
       setSmsError('Failed to parse SMS: ' + err.message);
     }
   }, [smsText, add, exists]);
+
+  // Handle manual expense entry
+  const handleManualSubmit = useCallback(async () => {
+    setManualError(null);
+    setManualExpense(null);
+    setSaveStatus(null);
+
+    // Validation
+    const amount = parseFloat(manualAmount);
+    if (!amount || amount <= 0) {
+      setManualError('Please enter a valid amount');
+      return;
+    }
+    if (!manualMerchant.trim()) {
+      setManualError('Please enter a merchant name');
+      return;
+    }
+
+    try {
+      // Create expense object
+      const expenseData = {
+        amount,
+        currency: 'INR',
+        merchant: manualMerchant.trim(),
+        category: manualCategory,
+        date: new Date(manualDate).toISOString(),
+        source: 'Manual',
+        confidence: 1,
+        rawText: '',
+      };
+
+      // Generate hash for deduplication
+      const hashInput = `${amount}-${manualMerchant}-${manualDate}-${Date.now()}`;
+      const hash = await generateHash(hashInput);
+      const expenseWithId = { ...expenseData, id: hash };
+
+      setManualExpense(expenseWithId);
+
+      // Save directly (manual entries are always high confidence)
+      setSaveStatus('saving');
+      await add(expenseWithId);
+      setSaveStatus('saved');
+    } catch (err) {
+      setManualError('Failed to save expense: ' + err.message);
+    }
+  }, [manualAmount, manualMerchant, manualCategory, manualDate, add]);
 
   const handleEditExpense = (expense) => {
     setEditingExpense(expense);
@@ -168,8 +248,8 @@ export function HomePage() {
   const isProcessing = status === 'preprocessing' || status === 'recognizing';
 
   // Current expense based on mode
-  const currentExpense = inputMode === 'screenshot' ? expense : smsExpense;
-  const currentNeedsReview = inputMode === 'screenshot' ? (showReview && expense) : smsNeedsReview;
+  const currentExpense = inputMode === 'screenshot' ? expense : inputMode === 'sms' ? smsExpense : manualExpense;
+  const currentNeedsReview = inputMode === 'screenshot' ? (showReview && expense) : inputMode === 'sms' ? smsNeedsReview : false;
 
   return (
     <div className="space-y-8">
@@ -178,26 +258,38 @@ export function HomePage() {
         <button
           onClick={() => { setInputMode('screenshot'); handleReset(); }}
           className={cn(
-            'flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-all',
+            'flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium transition-all',
             inputMode === 'screenshot'
               ? 'bg-primary text-primary-foreground'
               : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
           )}
         >
           <ImagePlus className="w-4 h-4" />
-          Screenshot
+          <span className="hidden sm:inline">Screenshot</span>
         </button>
         <button
           onClick={() => { setInputMode('sms'); handleReset(); }}
           className={cn(
-            'flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-all',
+            'flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium transition-all',
             inputMode === 'sms'
               ? 'bg-primary text-primary-foreground'
               : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
           )}
         >
           <MessageSquareText className="w-4 h-4" />
-          Bank SMS
+          <span className="hidden sm:inline">Bank SMS</span>
+        </button>
+        <button
+          onClick={() => { setInputMode('manual'); handleReset(); }}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium transition-all',
+            inputMode === 'manual'
+              ? 'bg-primary text-primary-foreground'
+              : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+          )}
+        >
+          <PenLine className="w-4 h-4" />
+          <span className="hidden sm:inline">Manual</span>
         </button>
       </div>
 
@@ -296,6 +388,104 @@ export function HomePage() {
                 </div>
                 <Button variant="outline" size="sm" onClick={() => { setSmsError(null); setSmsText(''); }}>
                   Try Again
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Manual Mode */}
+        {inputMode === 'manual' && (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-border bg-card p-4 space-y-4">
+              {/* Amount */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Amount
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-muted-foreground">
+                    ₹
+                  </span>
+                  <Input
+                    type="number"
+                    value={manualAmount}
+                    onChange={(e) => setManualAmount(e.target.value)}
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                    className="pl-10 text-xl font-bold h-12"
+                  />
+                </div>
+              </div>
+
+              {/* Merchant */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Merchant
+                </label>
+                <Input
+                  type="text"
+                  value={manualMerchant}
+                  onChange={(e) => setManualMerchant(e.target.value)}
+                  placeholder="Where did you spend?"
+                />
+              </div>
+
+              {/* Category & Date Row */}
+              <div className="grid grid-cols-2 gap-3">
+                {/* Category */}
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Category
+                  </label>
+                  <select
+                    value={manualCategory}
+                    onChange={(e) => setManualCategory(e.target.value)}
+                    className={cn(
+                      'flex h-11 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2',
+                      'text-sm text-foreground transition-colors',
+                      'focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary'
+                    )}
+                  >
+                    {CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Date */}
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Date
+                  </label>
+                  <Input
+                    type="date"
+                    value={manualDate}
+                    onChange={(e) => setManualDate(e.target.value)}
+                    className="h-11"
+                  />
+                </div>
+              </div>
+
+              <Button
+                onClick={handleManualSubmit}
+                disabled={!manualAmount || !manualMerchant.trim()}
+                className="w-full"
+              >
+                Add Expense
+              </Button>
+            </div>
+
+            {/* Manual Error */}
+            {manualError && (
+              <div className="rounded-xl border border-destructive/50 bg-destructive/10 p-4 space-y-3 animate-slide-up">
+                <div className="flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 text-destructive" />
+                  <span className="text-sm text-destructive">{manualError}</span>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => setManualError(null)}>
+                  Dismiss
                 </Button>
               </div>
             )}
