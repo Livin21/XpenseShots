@@ -149,3 +149,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 input[type="date"]::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
 }
+
+/* iOS zoom fix - prevent auto-zoom on input focus */
+/* iOS zooms on inputs with font-size < 16px and doesn't zoom back */
+@media screen and (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
