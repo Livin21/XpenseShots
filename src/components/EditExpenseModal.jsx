@@ -229,6 +229,7 @@ export function EditExpenseModal({ expense, onSave, onCancel, onDelete }) {
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
+              className="w-full"
             />
           </div>
 

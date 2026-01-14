@@ -523,7 +523,7 @@ export function HomePage() {
                     type="date"
                     value={manualDate}
                     onChange={(e) => setManualDate(e.target.value)}
-                    className="h-11"
+                    className="h-11 w-full"
                   />
                 </div>
               </div>
