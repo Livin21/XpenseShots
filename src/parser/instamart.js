@@ -57,9 +57,13 @@ export function parseInstamart(text, lines) {
       if (excludeKeywords.some(k => line.includes(k))) continue;
       // Skip individual item prices (1x, etc.)
       if (/^\d+\s*x\s/i.test(line)) continue;
+      // Skip lines with dates
+      if (/\d{1,2}\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(line)) continue;
 
       const lineAmounts = extractAmounts(line, AMOUNT_OPTIONS);
-      amounts.push(...lineAmounts);
+      // Filter out year-like numbers (2020-2030)
+      const filtered = lineAmounts.filter(a => !(a >= 2020 && a <= 2030));
+      amounts.push(...filtered);
     }
 
     log('Amounts found:', amounts);
@@ -72,7 +76,9 @@ export function parseInstamart(text, lines) {
   // Strategy 4: Fallback to largest reasonable amount
   if (!amount) {
     log('Strategy 4: Looking for any reasonable amount...');
-    const allAmounts = extractAmounts(text, AMOUNT_OPTIONS).filter(a => a >= 50 && a <= 50000);
+    const allAmounts = extractAmounts(text, AMOUNT_OPTIONS)
+      .filter(a => a >= 50 && a <= 50000)
+      .filter(a => !(a >= 2020 && a <= 2030)); // Exclude year-like numbers
     log('All reasonable amounts:', allAmounts);
     if (allAmounts.length > 0) {
       amount = Math.max(...allAmounts);

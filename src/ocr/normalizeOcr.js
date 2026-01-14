@@ -20,12 +20,43 @@ function isLikelyPaymentAmount(value) {
 
 /**
  * Normalize amounts in OCR text
- * Handles cases where decimal point is missing (e.g., "61200" should be "612.00")
+ * Handles cases where:
+ * - Decimal point is missing (e.g., "61200" should be "612.00")
+ * - ₹ is misread as "R" (e.g., "R475" should be "₹475")
+ * - ₹ is misread as "2" or "3" prefix
  * @param {string} text - Raw OCR text
  * @returns {string} Normalized text
  */
 export function normalizeAmounts(text) {
   let result = text;
+
+  // Pattern 0a: R followed by number (₹ misread as R)
+  // e.g., "R475" -> "₹475", "R612" -> "₹612"
+  result = result.replace(
+    /(?:^|[\s\n])R(\d{2,6}(?:\.\d{2})?)\b/g,
+    (match, num) => {
+      const value = parseFloat(num);
+      if (isLikelyPaymentAmount(value)) {
+        log(`R misread as ₹: R${num} -> ₹${num}`);
+        return match.replace(`R${num}`, `₹${num}`);
+      }
+      return match;
+    }
+  );
+
+  // Pattern 0b: I followed by number in amount context (₹ misread as I)
+  // e.g., "4 items, I554" -> "4 items, ₹554"
+  result = result.replace(
+    /(items|total|paid|bill)\s*,?\s*I(\d{2,6}(?:\.\d{2})?)\b/gi,
+    (match, context, num) => {
+      const value = parseFloat(num);
+      if (isLikelyPaymentAmount(value)) {
+        log(`I misread as ₹: I${num} -> ₹${num}`);
+        return `${context}, ₹${num}`;
+      }
+      return match;
+    }
+  );
 
   // Pattern 1: Large numbers near amount labels that are likely missing decimals
   // e.g., "total amount 61200" -> "total amount ₹612.00"
@@ -72,23 +103,39 @@ export function normalizeAmounts(text) {
     }
   );
 
-  // Pattern 2: Standalone large numbers that might be amounts with missing decimals
-  // Only apply if the number starts with 3 (likely misread ₹)
+  // Pattern 2: Large numbers near amount labels that start with 2 or 3 (misread ₹)
+  // Only convert when preceded by amount context words, NOT for bank IDs, years, etc.
+  // e.g., "Items, 2640.00" -> "Items, ₹640.00"
   result = result.replace(
-    /\b3(\d{3,6})(?:\.\d{2})?\b/g,
-    (match, rest) => {
-      const fullNum = '3' + rest;
-      const value = parseFloat(fullNum);
+    /(items|total|paid|amount|bill|price|fee|₹)\s*,?\s*([23])(\d{2,5})(?:\.(\d{2}))?\b/gi,
+    (match, context, prefix, intPart, decPart) => {
+      const fullNum = prefix + intPart + (decPart ? '.' + decPart : '');
+      const withoutPrefix = intPart + (decPart ? '.' + decPart : '');
+      const value = parseFloat(withoutPrefix);
 
-      // Check if stripping the 3 gives a reasonable amount
-      const withoutThree = parseFloat(rest);
-      if (isLikelyPaymentAmount(withoutThree)) {
-        log(`Likely misread ₹: ${fullNum} -> ₹${rest}`);
-        return `₹${rest}`;
+      if (isLikelyPaymentAmount(value)) {
+        log(`Likely misread ₹ (context: ${context}): ${fullNum} -> ₹${withoutPrefix}`);
+        return `${context} ₹${withoutPrefix}`;
       }
 
-      // Try with decimal reconstruction
-      if (rest.length >= 2) {
+      return match;
+    }
+  );
+
+  // Pattern 3: Standalone 5-6 digit numbers starting with 2 or 3 that look like amounts with lost decimals
+  // e.g., "330090" -> "₹300.90" (but NOT "2026" which is a year, or "3833" which is a bank ID)
+  result = result.replace(
+    /\b([23])(\d{4,5})\b/g,
+    (match, prefix, rest) => {
+      const fullNum = prefix + rest;
+
+      // Skip if it looks like a year (2020-2030)
+      if (/^20[2-3]\d$/.test(fullNum)) {
+        return match;
+      }
+
+      // Try with decimal reconstruction (insert decimal before last 2 digits)
+      if (rest.length >= 3) {
         const withDecimal = rest.slice(0, -2) + '.' + rest.slice(-2);
         const parsed = parseFloat(withDecimal);
         if (isLikelyPaymentAmount(parsed)) {

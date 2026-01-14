@@ -157,7 +157,8 @@ export function parseUpiReceipt(text, lines) {
       'cashback',
       'plan price',
       'fee for',
-      'inclusive'
+      'inclusive',
+      'bank'  // Skip bank account numbers like "HDFC Bank 3833"
     ];
 
     // Get all amounts from text

@@ -29,62 +29,14 @@ export function classifyScreenshot(text) {
   const t = text.toLowerCase();
   log('Classifying text of length:', t.length);
 
-  // Check for Bank SMS first (credit/debit card transaction alerts)
-  const bankSmsKeywords = [
-    'spent using',
-    'spent on your',
-    'credit card',
-    'debit card',
-    'bank card',
-    'avl limit',
-    'available limit',
-    'card ending',
-    'card xx',
-    'txn rs',
-    'not you',
-    'block cc',
-    'block card',
-  ];
-
-  const bankSmsIndicators = [
-    'icici',
-    'hdfc',
-    'federal bank',
-    'axis',
-    'kotak',
-    'sbi',
-    'idfc',
-    'yes bank',
-    'indusind',
-    'rbl',
-    'canara',
-    'pnb',
-    'bob',
-  ];
-
-  const hasBankSmsKeywords = hasAny(t, bankSmsKeywords);
-  const hasBankIndicator = hasAny(t, bankSmsIndicators);
-
-  log('Bank SMS keywords:', hasBankSmsKeywords, '| Bank indicator:', hasBankIndicator);
-
-  if (hasBankSmsKeywords && hasBankIndicator) {
-    log('Result: BANK_SMS');
-    return ScreenshotTypes.BANK_SMS;
-  }
-
-  // Strong bank SMS indicators (even without bank name)
-  if (hasAny(t, ['spent using', 'spent on your credit card', 'spent on your debit card', 'avl limit:', 'available limit'])) {
-    log('Result: BANK_SMS (strong indicators)');
-    return ScreenshotTypes.BANK_SMS;
-  }
-
   // Check for Instamart first (most specific)
   if (hasAny(t, ['instamart'])) {
     log('Result: QUICK_COMMERCE (instamart keyword)');
     return ScreenshotTypes.QUICK_COMMERCE;
   }
 
-  // Check for food delivery apps
+  // Check for food delivery apps BEFORE bank SMS
+  // (Food delivery receipts can contain "debit card", "axis rewards", etc.)
   // Looking for Swiggy or Zomato indicators
   const foodAppKeywords = [
     'swiggy',
@@ -96,7 +48,8 @@ export function classifyScreenshot(text) {
     'bill details',
     'item total',
     'delivery partner',
-    'restaurant packaging'
+    'restaurant packaging',
+    'bill total'
   ];
 
   const foodIndicatorKeywords = [
@@ -117,6 +70,35 @@ export function classifyScreenshot(text) {
   if (isFoodApp && hasFoodIndicators) {
     log('Result: FOOD_DELIVERY');
     return ScreenshotTypes.FOOD_DELIVERY;
+  }
+
+  // Check for Bank SMS (credit/debit card transaction alerts)
+  // This comes AFTER food delivery to avoid misclassifying food receipts
+  const bankSmsKeywords = [
+    'spent using',
+    'spent on your',
+    'avl limit',
+    'available limit',
+    'card ending',
+    'card xx',
+    'txn rs',
+    'not you',
+    'block cc',
+    'block card',
+  ];
+
+  // More specific bank SMS patterns that don't appear in food delivery receipts
+  const hasBankSmsKeywords = hasAny(t, bankSmsKeywords);
+
+  if (hasBankSmsKeywords) {
+    log('Result: BANK_SMS');
+    return ScreenshotTypes.BANK_SMS;
+  }
+
+  // Strong bank SMS indicators (even without bank name)
+  if (hasAny(t, ['spent using', 'spent on your credit card', 'spent on your debit card', 'avl limit:', 'available limit'])) {
+    log('Result: BANK_SMS (strong indicators)');
+    return ScreenshotTypes.BANK_SMS;
   }
 
   // Check for UPI/GPay - should come after food delivery check

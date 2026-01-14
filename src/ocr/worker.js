@@ -10,6 +10,10 @@ let worker = null;
 let isPreloading = false;
 let preloadPromise = null;
 
+// Use English + Hindi for better ₹ (INR) symbol recognition
+// The ₹ symbol (U+20B9) is not in English traineddata but is in Hindi
+const OCR_LANGUAGES = 'eng+hin';
+
 /**
  * Initialize Tesseract worker
  */
@@ -26,9 +30,9 @@ async function initWorker(onProgress) {
     return worker;
   }
 
-  log('Initializing Tesseract worker...');
+  log('Initializing Tesseract worker with languages:', OCR_LANGUAGES);
 
-  worker = await createWorker('eng', 1, {
+  worker = await createWorker(OCR_LANGUAGES, 1, {
     logger: (m) => {
       if (DEBUG && m.status) {
         log('Status:', m.status, m.progress ? `(${Math.round(m.progress * 100)}%)` : '');
@@ -63,9 +67,9 @@ export async function preloadOcr(onProgress) {
   }
 
   isPreloading = true;
-  log('Preloading OCR worker and language data...');
+  log('Preloading OCR worker and language data:', OCR_LANGUAGES);
 
-  preloadPromise = createWorker('eng', 1, {
+  preloadPromise = createWorker(OCR_LANGUAGES, 1, {
     logger: (m) => {
       if (DEBUG && m.status) {
         log('Preload:', m.status, m.progress ? `(${Math.round(m.progress * 100)}%)` : '');
@@ -108,11 +112,9 @@ export async function recognizeText(imageBlob, onProgress) {
 
   // Set parameters for better recognition of receipts
   await w.setParameters({
-    // PSM 6 = Assume a single uniform block of text (good for receipts)
-    tessedit_pageseg_mode: '6',
-    // Whitelist characters to reduce misrecognition
-    // Includes digits, letters, currency symbols, and common punctuation
-    tessedit_char_whitelist: '0123456789₹.,:-@/\\()[]{}abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ ',
+    // PSM 3 = Fully automatic page segmentation (better for mixed content with different text sizes)
+    // PSM 6 was missing large stylized amounts in payment screenshots
+    tessedit_pageseg_mode: '3',
   });
 
   const startTime = performance.now();

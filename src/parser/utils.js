@@ -2,9 +2,10 @@
  * Extract all amounts from text
  * Handles various formats: ₹500, Rs.500, Rs 500, 500.00, etc.
  * Also handles OCR misreading ₹ as "3" (e.g., ₹620 → 3620)
+ * And OCR losing decimal points (e.g., 300.90 → 30090)
  * @param {string} text - Text to search
  * @param {object} options - Options
- * @param {boolean} options.fixMisreadRupee - Try to fix ₹ misread as 3
+ * @param {boolean} options.fixMisreadRupee - Try to fix ₹ misread as 2/3 and lost decimals
  * @returns {number[]} Array of amounts found
  */
 export function extractAmounts(text, options = {}) {
@@ -21,6 +22,20 @@ export function extractAmounts(text, options = {}) {
   // Pattern 1b: ¥ followed by number - OCR sometimes misreads ₹ as ¥
   const pattern1b = /¥\s?([0-9,]+(?:\.[0-9]{1,2})?)/g;
   while ((match = pattern1b.exec(text)) !== null) {
+    amounts.push(parseFloat(match[1].replace(/,/g, '')));
+  }
+
+  // Pattern 1c: R followed by number - OCR sometimes misreads ₹ as R (capital R)
+  // Only match at start of line or after whitespace to avoid matching words like "R2D2"
+  const pattern1c = /(?:^|[\s\n])R([0-9,]+(?:\.[0-9]{1,2})?)/g;
+  while ((match = pattern1c.exec(text)) !== null) {
+    amounts.push(parseFloat(match[1].replace(/,/g, '')));
+  }
+
+  // Pattern 1d: F followed by number - OCR sometimes misreads ₹ as F (especially on dark backgrounds)
+  // e.g., "F275" → ₹275, "F664.70" → ₹664.70
+  const pattern1d = /(?:^|[\s\n])F([0-9,]+(?:\.[0-9]{1,2})?)/g;
+  while ((match = pattern1d.exec(text)) !== null) {
     amounts.push(parseFloat(match[1].replace(/,/g, '')));
   }
 
@@ -44,53 +59,66 @@ export function extractAmounts(text, options = {}) {
     }
   }
 
-  // Fix OCR misreading ₹ as "3" (common issue)
-  // e.g., ₹620 appears as 3620 in OCR
+  // Filter out NaN values that can occur from malformed OCR text
+  const validAmounts = amounts.filter(a => !isNaN(a));
+
+  // Fix OCR issues: ₹ misread as "2" or "3", and lost decimal points
+  // e.g., ₹620 appears as 3620, ₹300.90 appears as 330090
   if (fixMisreadRupee) {
-    return amounts.map(amt => fixMisreadRupeeAmount(amt));
+    return validAmounts.map(amt => fixMisreadRupeeAmount(amt));
   }
 
-  return amounts;
+  return validAmounts;
 }
 
 /**
- * Fix amounts where OCR misread ₹ symbol as digit "3"
- * e.g., ₹620 → 3620, ₹330 → 3330, ₹85 → 385
+ * Fix amounts where OCR misread ₹ symbol as digit "2" or "3"
+ * and/or lost decimal points
+ * Examples:
+ * - ₹620 → 3620 or 2620 (misread ₹ as 3 or 2)
+ * - ₹300.90 → 330090 (misread ₹ as 3, lost decimal)
+ * - ₹299.00 → 2299.00 (misread ₹ as 2)
  * @param {number} amount - Amount that might have misread ₹
  * @returns {number} Corrected amount
  */
 export function fixMisreadRupeeAmount(amount) {
   const str = String(amount);
 
-  // Check if starts with 3 and could be a misread ₹
-  if (!str.startsWith('3')) return amount;
+  // Case 1: Large integers that might have lost decimals (5-6 digits starting with 2 or 3)
+  // e.g., 330090 → 300.90, 230050 → 300.50
+  if (/^[23]\d{4,5}$/.test(str)) {
+    // Try interpreting as amount with misread ₹ prefix and missing decimal
+    const withoutPrefix = str.slice(1);
+    // Insert decimal before last 2 digits
+    const intPart = withoutPrefix.slice(0, -2);
+    const decPart = withoutPrefix.slice(-2);
+    const corrected = parseFloat(`${intPart}.${decPart}`);
 
-  // Get the amount without the leading 3
-  const withoutLeading3 = str.slice(1);
-  if (!withoutLeading3) return amount;
-
-  const corrected = parseFloat(withoutLeading3);
-
-  // Heuristics to determine if this is likely a misread ₹:
-  // - Original looks too high for typical food order (3xxx for what should be xxx)
-  // - Corrected amount is in reasonable range for food/groceries (50-3000)
-  // - Pattern: 3XXX where XXX is 2-3 digits (e.g., 3620 → 620, 3330 → 330)
-
-  // For amounts like 3620 → 620, 3330 → 330, 3199 → 199
-  if (amount >= 300 && amount < 4000 && corrected >= 50 && corrected < 1000) {
-    return corrected;
+    // Validate it's in reasonable transaction range
+    if (corrected >= 10 && corrected <= 10000) {
+      return corrected;
+    }
   }
 
-  // For slightly larger orders: 31500 → 1500, 32000 → 2000
-  if (amount >= 3000 && amount < 40000 && corrected >= 500 && corrected <= 5000) {
-    return corrected;
-  }
+  // Case 2: Amount starts with 2 or 3 and might have misread ₹ (with decimal intact)
+  // e.g., 2299.00 → 299.00, 3620.50 → 620.50
+  if (/^[23]/.test(str)) {
+    const withoutPrefix = str.slice(1);
+    if (!withoutPrefix) return amount;
 
-  // For amounts with decimals: 3620.00 → 620.00
-  if (str.includes('.')) {
-    const correctedWithDecimal = parseFloat(withoutLeading3);
-    if (correctedWithDecimal >= 50 && correctedWithDecimal <= 5000) {
-      return correctedWithDecimal;
+    const corrected = parseFloat(withoutPrefix);
+
+    // Heuristics for 4-digit numbers: 3620 → 620, 2299 → 299
+    if (amount >= 200 && amount < 10000 && corrected >= 50 && corrected < 5000) {
+      // Additional check: if original is way higher than corrected, likely misread
+      if (amount > corrected * 2) {
+        return corrected;
+      }
+    }
+
+    // For amounts with explicit decimals: 3620.00 → 620.00, 2299.00 → 299.00
+    if (str.includes('.') && corrected >= 10 && corrected <= 5000) {
+      return corrected;
     }
   }
 
@@ -143,7 +171,23 @@ export function extractAmountNearLabel(lines, labels, options = {}) {
       }
 
       if (hasLabel) {
-        const amounts = extractAmounts(line, options);
+        // First try standard amount extraction
+        let amounts = extractAmounts(line, options);
+
+        // If no amounts found, look for large integers that might be amounts with lost decimals
+        // e.g., "total amount 230050" where 230050 is actually ₹300.50
+        if (amounts.length === 0 && options.fixMisreadRupee) {
+          const largeIntPattern = /\b([23]\d{4,5})\b/g;
+          let match;
+          while ((match = largeIntPattern.exec(line)) !== null) {
+            const raw = parseInt(match[1], 10);
+            const fixed = fixMisreadRupeeAmount(raw);
+            if (fixed !== raw) {
+              amounts.push(fixed);
+            }
+          }
+        }
+
         if (amounts.length > 0) {
           // Return the last amount on the line (usually the value after the label)
           return amounts[amounts.length - 1];
@@ -160,13 +204,16 @@ export function extractAmountNearLabel(lines, labels, options = {}) {
  * @returns {string | null} ISO date string or null
  */
 export function parseDate(text) {
-  // Pattern 1: "30 Aug 2025" or "30 August 2025" with optional time
+  // Pattern 1: "30 Aug 2025" or "30 August 2025" with optional time (space between day and month)
   const dateRegex1 = /(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{4})/i;
 
-  // Pattern 2: "11 Jan 2026, 8:47 am"
+  // Pattern 2: "11 Jan 2026, 8:47 am" (with optional comma and time)
   const dateRegex2 = /(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{4}),?\s*(\d{1,2}:\d{2}\s*(?:am|pm)?)?/i;
 
-  let match = text.match(dateRegex2) || text.match(dateRegex1);
+  // Pattern 3: "11Jan 2026" - OCR sometimes loses the space between day and month
+  const dateRegex3 = /(\d{1,2})(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{4})/i;
+
+  let match = text.match(dateRegex2) || text.match(dateRegex1) || text.match(dateRegex3);
 
   if (match) {
     try {
@@ -180,9 +227,9 @@ export function parseDate(text) {
     }
   }
 
-  // Pattern 3: ISO-ish format or other standard formats
-  const dateRegex3 = /(\d{4}[-/]\d{2}[-/]\d{2})/;
-  match = text.match(dateRegex3);
+  // Pattern 4: ISO-ish format or other standard formats
+  const dateRegex4 = /(\d{4}[-/]\d{2}[-/]\d{2})/;
+  match = text.match(dateRegex4);
   if (match) {
     try {
       const parsed = new Date(match[1]);
