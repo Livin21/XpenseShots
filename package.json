@@ -1,7 +1,31 @@
 {
   "name": "xpenseshots",
-  "private": true,
+  "version": "1.0.0",
+  "description": "Turn payment screenshots into organized expenses instantly. Zero-friction expense tracking with OCR - no accounts, no cloud, 100% private.",
   "type": "module",
+  "license": "MIT",
+  "author": "Livin Mathew",
+  "homepage": "https://xpenseshots.livinmathew.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Livin21/XpenseShots.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Livin21/XpenseShots/issues"
+  },
+  "keywords": [
+    "expense-tracker",
+    "ocr",
+    "screenshot",
+    "gpay",
+    "upi",
+    "swiggy",
+    "zomato",
+    "personal-finance",
+    "privacy",
+    "offline-first",
+    "pwa"
+  ],
   "scripts": {
     "dev": "vite --port 3000",
     "build": "vite build",

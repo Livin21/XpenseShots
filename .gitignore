@@ -1,15 +1,46 @@
+# Dependencies
 node_modules
-.DS_Store
+
+# Build output
 dist
 dist-ssr
 *.local
-count.txt
+
+# Environment files
 .env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea
+*.swp
+*.swo
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Framework specific
 .nitro
 .tanstack
 .wrangler
 
-# Test screenshots and OCR training data (not needed in repo)
+# Test files and data
 payment ss/
 *.traineddata
 test-*.mjs
+coverage/
+
+# Internal planning docs (not needed for contributors)
+plan.md
+parser.md
+
+# Misc
+count.txt
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
