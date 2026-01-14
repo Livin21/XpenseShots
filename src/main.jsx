@@ -32,30 +32,32 @@ function RootLayout() {
             <span className="text-lg font-bold gradient-text">xpenseshots</span>
           </Link>
           <nav className="flex items-center gap-1">
+            {/* Desktop nav - hidden on mobile */}
             <Link
               to="/"
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-200"
-              activeProps={{ className: 'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary/20 text-primary' }}
+              className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-200"
+              activeProps={{ className: 'hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary/20 text-primary' }}
             >
               <Home className="w-4 h-4" />
-              <span className="hidden sm:inline">Home</span>
+              <span>Home</span>
             </Link>
             <Link
               to="/expenses"
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-200"
-              activeProps={{ className: 'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary/20 text-primary' }}
+              className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-200"
+              activeProps={{ className: 'hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary/20 text-primary' }}
             >
               <Receipt className="w-4 h-4" />
-              <span className="hidden sm:inline">Expenses</span>
+              <span>Expenses</span>
             </Link>
             <Link
               to="/analytics"
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-200"
-              activeProps={{ className: 'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary/20 text-primary' }}
+              className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-200"
+              activeProps={{ className: 'hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary/20 text-primary' }}
             >
               <BarChart3 className="w-4 h-4" />
-              <span className="hidden sm:inline">Analytics</span>
+              <span>Analytics</span>
             </Link>
+            {/* Settings - always visible */}
             <Link
               to="/settings"
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-200"
@@ -68,18 +70,48 @@ function RootLayout() {
         </div>
       </header>
 
-      {/* Main content */}
-      <main className="flex-1 w-full max-w-2xl mx-auto px-4 py-6">
+      {/* Main content - add bottom padding on mobile for bottom nav */}
+      <main className="flex-1 w-full max-w-2xl mx-auto px-4 py-6 pb-24 sm:pb-6">
         <Outlet />
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border py-4">
+      {/* Footer - hidden on mobile */}
+      <footer className="hidden sm:block border-t border-border py-4">
         <div className="max-w-2xl mx-auto px-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
           <Shield className="w-4 h-4 text-primary" />
           <span>All data stays on your device</span>
         </div>
       </footer>
+
+      {/* Bottom Navigation - mobile only */}
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 glass border-t border-border">
+        <div className="flex items-center justify-around h-16 px-2">
+          <Link
+            to="/"
+            className="flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg text-muted-foreground hover:text-foreground transition-all duration-200 min-w-[72px]"
+            activeProps={{ className: 'flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg text-primary transition-all duration-200 min-w-[72px]' }}
+          >
+            <Home className="w-5 h-5" />
+            <span className="text-xs font-medium">Home</span>
+          </Link>
+          <Link
+            to="/expenses"
+            className="flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg text-muted-foreground hover:text-foreground transition-all duration-200 min-w-[72px]"
+            activeProps={{ className: 'flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg text-primary transition-all duration-200 min-w-[72px]' }}
+          >
+            <Receipt className="w-5 h-5" />
+            <span className="text-xs font-medium">Expenses</span>
+          </Link>
+          <Link
+            to="/analytics"
+            className="flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg text-muted-foreground hover:text-foreground transition-all duration-200 min-w-[72px]"
+            activeProps={{ className: 'flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg text-primary transition-all duration-200 min-w-[72px]' }}
+          >
+            <BarChart3 className="w-5 h-5" />
+            <span className="text-xs font-medium">Analytics</span>
+          </Link>
+        </div>
+      </nav>
 
     </div>
   )
