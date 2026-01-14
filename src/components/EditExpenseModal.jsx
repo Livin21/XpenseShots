@@ -274,6 +274,8 @@ export function EditExpenseModal({ expense, onSave, onCancel, onDelete }) {
               </label>
               <button
                 type="button"
+                role="switch"
+                aria-checked={splitEnabled}
                 onClick={() => {
                   const newEnabled = !splitEnabled;
                   setSplitEnabled(newEnabled);
@@ -283,14 +285,14 @@ export function EditExpenseModal({ expense, onSave, onCancel, onDelete }) {
                   }
                 }}
                 className={cn(
-                  'relative w-10 h-6 rounded-full transition-colors',
+                  'relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors',
                   splitEnabled ? 'bg-primary' : 'bg-secondary'
                 )}
               >
                 <span
                   className={cn(
-                    'absolute top-1 w-4 h-4 rounded-full bg-white transition-transform',
-                    splitEnabled ? 'translate-x-5' : 'translate-x-1'
+                    'pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform',
+                    splitEnabled ? 'translate-x-5' : 'translate-x-0'
                   )}
                 />
               </button>
