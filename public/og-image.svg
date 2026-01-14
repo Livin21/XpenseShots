@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#0a0a0a"/>
+      <stop offset="0%" style="stop-color:#0f0f14"/>
       <stop offset="100%" style="stop-color:#1a1a2e"/>
     </linearGradient>
     <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -10,44 +10,48 @@
     </linearGradient>
   </defs>
 
-  <!-- Background -->
+  <!-- Solid Background -->
+  <rect width="1200" height="630" fill="#0a0a0a"/>
   <rect width="1200" height="630" fill="url(#bgGrad)"/>
 
-  <!-- Decorative circles -->
-  <circle cx="100" cy="100" r="200" fill="#a855f7" opacity="0.1"/>
-  <circle cx="1100" cy="530" r="250" fill="#6366f1" opacity="0.1"/>
+  <!-- Decorative glows -->
+  <ellipse cx="150" cy="150" rx="300" ry="250" fill="#a855f7" opacity="0.08"/>
+  <ellipse cx="1050" cy="480" rx="350" ry="300" fill="#6366f1" opacity="0.08"/>
 
   <!-- Logo icon -->
-  <g transform="translate(100, 200)">
-    <circle cx="60" cy="60" r="55" fill="#0a0a0a" stroke="url(#purpleGrad)" stroke-width="4"/>
-    <path d="M68 25L45 68h20l-8 37 32-45h-20l8-35z" fill="url(#purpleGrad)"/>
+  <g transform="translate(100, 180)">
+    <circle cx="65" cy="65" r="60" fill="#0f0f14"/>
+    <circle cx="65" cy="65" r="58" fill="none" stroke="url(#purpleGrad)" stroke-width="3"/>
+    <path d="M73 28L48 73h22l-9 40 35-48H74l9-37z" fill="url(#purpleGrad)"/>
   </g>
 
   <!-- App name -->
-  <text x="230" y="280" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="bold" fill="white">xpenseshots</text>
+  <text x="245" y="270" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="bold" fill="#ffffff">xpenseshots</text>
 
   <!-- Tagline -->
-  <text x="100" y="380" font-family="system-ui, -apple-system, sans-serif" font-size="32" fill="#a1a1aa">Screenshot to Expense Tracker</text>
+  <text x="100" y="360" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#a1a1aa">Screenshot to Expense Tracker</text>
 
-  <!-- Features -->
-  <text x="100" y="480" font-family="system-ui, -apple-system, sans-serif" font-size="24" fill="#71717a">Zero-friction expense tracking with OCR</text>
-  <text x="100" y="520" font-family="system-ui, -apple-system, sans-serif" font-size="24" fill="#71717a">No accounts, no cloud, 100% private</text>
+  <!-- Features line -->
+  <text x="100" y="430" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#71717a">Zero-friction expense tracking with OCR | No accounts | No cloud | 100% private</text>
 
-  <!-- Feature badges -->
-  <g transform="translate(750, 350)">
-    <rect x="0" y="0" width="120" height="40" rx="20" fill="#a855f7" opacity="0.2"/>
-    <text x="60" y="27" font-family="system-ui, sans-serif" font-size="16" fill="#a855f7" text-anchor="middle">GPay</text>
+  <!-- Feature badges row -->
+  <g transform="translate(100, 480)">
+    <rect x="0" y="0" width="90" height="36" rx="18" fill="#a855f7" fill-opacity="0.2"/>
+    <text x="45" y="24" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#a855f7" text-anchor="middle">GPay</text>
 
-    <rect x="140" y="0" width="120" height="40" rx="20" fill="#f97316" opacity="0.2"/>
-    <text x="200" y="27" font-family="system-ui, sans-serif" font-size="16" fill="#f97316" text-anchor="middle">Swiggy</text>
+    <rect x="110" y="0" width="90" height="36" rx="18" fill="#f97316" fill-opacity="0.2"/>
+    <text x="155" y="24" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#f97316" text-anchor="middle">Swiggy</text>
 
-    <rect x="280" y="0" width="120" height="40" rx="20" fill="#ef4444" opacity="0.2"/>
-    <text x="340" y="27" font-family="system-ui, sans-serif" font-size="16" fill="#ef4444" text-anchor="middle">Zomato</text>
+    <rect x="220" y="0" width="90" height="36" rx="18" fill="#ef4444" fill-opacity="0.2"/>
+    <text x="265" y="24" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#ef4444" text-anchor="middle">Zomato</text>
 
-    <rect x="70" y="60" width="120" height="40" rx="20" fill="#22c55e" opacity="0.2"/>
-    <text x="130" y="87" font-family="system-ui, sans-serif" font-size="16" fill="#22c55e" text-anchor="middle">Bank SMS</text>
+    <rect x="330" y="0" width="110" height="36" rx="18" fill="#22c55e" fill-opacity="0.2"/>
+    <text x="385" y="24" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#22c55e" text-anchor="middle">Bank SMS</text>
 
-    <rect x="210" y="60" width="120" height="40" rx="20" fill="#3b82f6" opacity="0.2"/>
-    <text x="270" y="87" font-family="system-ui, sans-serif" font-size="16" fill="#3b82f6" text-anchor="middle">Manual</text>
+    <rect x="460" y="0" width="90" height="36" rx="18" fill="#3b82f6" fill-opacity="0.2"/>
+    <text x="505" y="24" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#3b82f6" text-anchor="middle">Manual</text>
   </g>
+
+  <!-- Bottom border accent -->
+  <rect x="0" y="620" width="1200" height="10" fill="url(#purpleGrad)"/>
 </svg>
