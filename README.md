@@ -4,6 +4,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+![xpenseshots screenshot](public/screenshot.png)
+
 ## Features
 
 **Screenshot to Expense** - Drop a payment screenshot and watch it transform into a structured expense entry with amount, merchant, category, and date extracted automatically.
