@@ -144,7 +144,7 @@ export function EditExpenseModal({ expense, onSave, onCancel, onDelete }) {
       onClick={onCancel}
     >
       <div
-        className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-border bg-card shadow-2xl shadow-primary/10 animate-slide-up"
+        className="w-full max-w-md max-h-[85dvh] overflow-y-auto rounded-2xl border border-border bg-card shadow-2xl shadow-primary/10 animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -364,7 +364,7 @@ export function EditExpenseModal({ expense, onSave, onCancel, onDelete }) {
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 flex items-center justify-between p-6 border-t border-border bg-card">
+        <div className="sticky bottom-0 flex items-center justify-between p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] border-t border-border bg-card">
           <Button
             variant={showDeleteConfirm ? 'destructive' : 'ghost'}
             onClick={handleDelete}
