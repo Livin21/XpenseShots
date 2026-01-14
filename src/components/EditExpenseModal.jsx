@@ -274,7 +274,14 @@ export function EditExpenseModal({ expense, onSave, onCancel, onDelete }) {
               </label>
               <button
                 type="button"
-                onClick={() => setSplitEnabled(!splitEnabled)}
+                onClick={() => {
+                  const newEnabled = !splitEnabled;
+                  setSplitEnabled(newEnabled);
+                  // Add "You" as first person when enabling split
+                  if (newEnabled && splitPeople.length === 0) {
+                    setSplitPeople([{ name: 'You', share: Number(amount), paid: true }]);
+                  }
+                }}
                 className={cn(
                   'relative w-10 h-6 rounded-full transition-colors',
                   splitEnabled ? 'bg-primary' : 'bg-secondary'
