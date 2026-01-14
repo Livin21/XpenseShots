@@ -83,21 +83,35 @@ const SOURCE_COLORS = {
  */
 function StatCard({ icon: Icon, label, value, subvalue, trend }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-          <Icon className="w-5 h-5 text-primary" />
+    <div className="rounded-xl border border-border bg-card p-3 sm:p-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0">
+            <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+          </div>
+          <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide sm:hidden">{label}</p>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-xs text-muted-foreground uppercase tracking-wide">{label}</p>
-          <p className="text-xl font-bold text-foreground truncate">{value}</p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide hidden sm:block">{label}</p>
+          <div className="flex items-center justify-between sm:block">
+            <p className="text-lg sm:text-xl font-bold text-foreground truncate">{value}</p>
+            {trend !== undefined && (
+              <div className={cn(
+                'flex items-center gap-1 text-xs sm:text-sm font-medium sm:hidden',
+                trend >= 0 ? 'text-red-400' : 'text-green-400'
+              )}>
+                {trend >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                {Math.abs(trend)}%
+              </div>
+            )}
+          </div>
           {subvalue && (
-            <p className="text-xs text-muted-foreground">{subvalue}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">{subvalue}</p>
           )}
         </div>
         {trend !== undefined && (
           <div className={cn(
-            'flex items-center gap-1 text-sm font-medium',
+            'hidden sm:flex items-center gap-1 text-sm font-medium',
             trend >= 0 ? 'text-red-400' : 'text-green-400'
           )}>
             {trend >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
@@ -296,25 +310,26 @@ export function AnalyticsPage() {
       </div>
 
       {/* Monthly Spending Chart */}
-      <div className="rounded-xl border border-border bg-card p-4">
-        <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-          <BarChart3 className="w-4 h-4 text-primary" />
+      <div className="rounded-xl border border-border bg-card p-3 sm:p-4">
+        <h3 className="text-xs sm:text-sm font-semibold text-foreground mb-3 sm:mb-4 flex items-center gap-2">
+          <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
           Monthly Spending
         </h3>
-        <div className="h-48">
+        <div className="h-36 sm:h-48">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={analytics.monthlyData}>
+            <BarChart data={analytics.monthlyData} margin={{ top: 5, right: 5, bottom: 5, left: -15 }}>
               <XAxis
                 dataKey="month"
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: '#71717a', fontSize: 12 }}
+                tick={{ fill: '#71717a', fontSize: 10 }}
               />
               <YAxis
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: '#71717a', fontSize: 12 }}
-                tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`}
+                tick={{ fill: '#71717a', fontSize: 9 }}
+                tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}
+                width={35}
               />
               <Tooltip content={<CustomTooltip />} />
               <Bar
@@ -329,22 +344,22 @@ export function AnalyticsPage() {
       </div>
 
       {/* Category & Source Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
         {/* By Category */}
-        <div className="rounded-xl border border-border bg-card p-4">
-          <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-            <PieChartIcon className="w-4 h-4 text-primary" />
+        <div className="rounded-xl border border-border bg-card p-3 sm:p-4">
+          <h3 className="text-xs sm:text-sm font-semibold text-foreground mb-2 sm:mb-4 flex items-center gap-2">
+            <PieChartIcon className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
             By Category
           </h3>
-          <div className="h-48">
+          <div className="h-32 sm:h-48">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={analytics.categoryData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={40}
-                  outerRadius={70}
+                  innerRadius="35%"
+                  outerRadius="70%"
                   paddingAngle={2}
                   dataKey="value"
                 >
@@ -356,34 +371,37 @@ export function AnalyticsPage() {
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {analytics.categoryData.slice(0, 4).map((cat) => (
-              <div key={cat.name} className="flex items-center gap-1.5 text-xs">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2">
+            {analytics.categoryData.slice(0, 3).map((cat) => (
+              <div key={cat.name} className="flex items-center gap-1 text-[10px] sm:text-xs">
                 <div
-                  className="w-2 h-2 rounded-full"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0"
                   style={{ backgroundColor: cat.color }}
                 />
-                <span className="text-muted-foreground">{cat.name}</span>
+                <span className="text-muted-foreground truncate">{cat.name.split(' ')[0]}</span>
               </div>
             ))}
+            {analytics.categoryData.length > 3 && (
+              <span className="text-[10px] sm:text-xs text-muted-foreground">+{analytics.categoryData.length - 3}</span>
+            )}
           </div>
         </div>
 
         {/* By Source */}
-        <div className="rounded-xl border border-border bg-card p-4">
-          <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-            <PieChartIcon className="w-4 h-4 text-primary" />
+        <div className="rounded-xl border border-border bg-card p-3 sm:p-4">
+          <h3 className="text-xs sm:text-sm font-semibold text-foreground mb-2 sm:mb-4 flex items-center gap-2">
+            <PieChartIcon className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
             By Source
           </h3>
-          <div className="h-48">
+          <div className="h-32 sm:h-48">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={analytics.sourceData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={40}
-                  outerRadius={70}
+                  innerRadius="35%"
+                  outerRadius="70%"
                   paddingAngle={2}
                   dataKey="value"
                 >
@@ -395,37 +413,40 @@ export function AnalyticsPage() {
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {analytics.sourceData.map((src) => (
-              <div key={src.name} className="flex items-center gap-1.5 text-xs">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2">
+            {analytics.sourceData.slice(0, 3).map((src) => (
+              <div key={src.name} className="flex items-center gap-1 text-[10px] sm:text-xs">
                 <div
-                  className="w-2 h-2 rounded-full"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0"
                   style={{ backgroundColor: src.color }}
                 />
-                <span className="text-muted-foreground">{src.name}</span>
+                <span className="text-muted-foreground truncate">{src.name}</span>
               </div>
             ))}
+            {analytics.sourceData.length > 3 && (
+              <span className="text-[10px] sm:text-xs text-muted-foreground">+{analytics.sourceData.length - 3}</span>
+            )}
           </div>
         </div>
       </div>
 
       {/* Top Merchants */}
-      <div className="rounded-xl border border-border bg-card p-4">
-        <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-          <Store className="w-4 h-4 text-primary" />
+      <div className="rounded-xl border border-border bg-card p-3 sm:p-4">
+        <h3 className="text-xs sm:text-sm font-semibold text-foreground mb-3 sm:mb-4 flex items-center gap-2">
+          <Store className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
           Top Merchants
         </h3>
-        <div className="space-y-3">
+        <div className="space-y-2.5 sm:space-y-3">
           {analytics.topMerchants.map((merchant, index) => (
-            <div key={merchant.name} className="flex items-center gap-3">
-              <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-xs font-medium text-muted-foreground">
+            <div key={merchant.name} className="flex items-center gap-2 sm:gap-3">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-secondary flex items-center justify-center text-[10px] sm:text-xs font-medium text-muted-foreground flex-shrink-0">
                 {index + 1}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">
+                <p className="text-xs sm:text-sm font-medium text-foreground truncate">
                   {merchant.name}
                 </p>
-                <div className="mt-1 h-1.5 bg-secondary rounded-full overflow-hidden">
+                <div className="mt-1 h-1 sm:h-1.5 bg-secondary rounded-full overflow-hidden">
                   <div
                     className="h-full bg-primary rounded-full"
                     style={{
@@ -434,7 +455,7 @@ export function AnalyticsPage() {
                   />
                 </div>
               </div>
-              <p className="text-sm font-semibold text-foreground">
+              <p className="text-xs sm:text-sm font-semibold text-foreground whitespace-nowrap">
                 {formatAmount(merchant.amount)}
               </p>
             </div>
