@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
-import { AlertCircle, CheckCircle2, Copy, Loader2, ImagePlus, MessageSquareText, PenLine, Download } from 'lucide-react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { AlertCircle, CheckCircle2, Copy, Loader2, ImagePlus, MessageSquareText, PenLine, Download, Wifi, WifiOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ import { useParseExpense } from '../hooks/useParseExpense.js';
 import { useExpenses } from '../hooks/useExpenses.js';
 import { useCategories } from '../hooks/useCategories.js';
 import { parseBankSms } from '../parser/banksms.js';
+import { preloadOcr, isOcrReady } from '../ocr/worker.js';
 
 /**
  * Generate a simple hash from text
@@ -44,6 +45,31 @@ export function HomePage() {
   const [showReview, setShowReview] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null);
   const [editingExpense, setEditingExpense] = useState(null);
+
+  // OCR preload state
+  const [ocrReady, setOcrReady] = useState(isOcrReady());
+  const [ocrPreloadProgress, setOcrPreloadProgress] = useState(0);
+  const preloadStarted = useRef(false);
+
+  // Preload OCR on mount
+  useEffect(() => {
+    if (preloadStarted.current) return;
+    preloadStarted.current = true;
+
+    if (isOcrReady()) {
+      setOcrReady(true);
+      setOcrPreloadProgress(1);
+      return;
+    }
+
+    preloadOcr((progress) => {
+      setOcrPreloadProgress(progress);
+    }).then(() => {
+      setOcrReady(true);
+    }).catch((err) => {
+      console.error('OCR preload failed:', err);
+    });
+  }, []);
 
   // Input mode: 'screenshot' | 'sms' | 'manual'
   const [inputMode, setInputMode] = useState('screenshot');
@@ -362,6 +388,29 @@ export function HomePage() {
               onFileSelect={handleFileSelect}
               disabled={isProcessing}
             />
+
+            {/* OCR Preload Status */}
+            {!ocrReady && (
+              <div className="rounded-lg border border-border bg-card/50 p-3 space-y-2 animate-fade-in">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 text-primary animate-spin" />
+                  <span className="text-xs text-muted-foreground">
+                    Loading OCR engine for offline use...
+                  </span>
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    {Math.round(ocrPreloadProgress * 100)}%
+                  </span>
+                </div>
+                <Progress value={ocrPreloadProgress * 100} className="h-1" />
+              </div>
+            )}
+
+            {ocrReady && status === 'idle' && !saveStatus && (
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <WifiOff className="w-3.5 h-3.5 text-green-500" />
+                <span>Ready for offline use</span>
+              </div>
+            )}
 
             {/* Processing State */}
             {isProcessing && (

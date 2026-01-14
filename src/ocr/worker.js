@@ -7,6 +7,8 @@ function log(...args) {
 }
 
 let worker = null;
+let isPreloading = false;
+let preloadPromise = null;
 
 /**
  * Initialize Tesseract worker
@@ -14,6 +16,13 @@ let worker = null;
 async function initWorker(onProgress) {
   if (worker) {
     log('Reusing existing worker');
+    return worker;
+  }
+
+  // If preloading is in progress, wait for it
+  if (preloadPromise) {
+    log('Waiting for preload to complete...');
+    await preloadPromise;
     return worker;
   }
 
@@ -32,6 +41,58 @@ async function initWorker(onProgress) {
 
   log('Worker initialized');
   return worker;
+}
+
+/**
+ * Preload the OCR worker and language data
+ * Call this early to ensure offline capability
+ * @param {Function} onProgress - Progress callback (0-1)
+ * @returns {Promise<void>}
+ */
+export async function preloadOcr(onProgress) {
+  if (worker) {
+    log('Worker already loaded');
+    onProgress?.(1);
+    return;
+  }
+
+  if (isPreloading) {
+    log('Preload already in progress');
+    await preloadPromise;
+    return;
+  }
+
+  isPreloading = true;
+  log('Preloading OCR worker and language data...');
+
+  preloadPromise = createWorker('eng', 1, {
+    logger: (m) => {
+      if (DEBUG && m.status) {
+        log('Preload:', m.status, m.progress ? `(${Math.round(m.progress * 100)}%)` : '');
+      }
+      // Report progress during loading phases
+      if (onProgress && m.progress !== undefined) {
+        onProgress(m.progress);
+      }
+    }
+  });
+
+  try {
+    worker = await preloadPromise;
+    log('OCR preload complete - ready for offline use');
+    onProgress?.(1);
+  } finally {
+    isPreloading = false;
+    preloadPromise = null;
+  }
+}
+
+/**
+ * Check if OCR is ready for offline use
+ * @returns {boolean}
+ */
+export function isOcrReady() {
+  return worker !== null;
 }
 
 /**
